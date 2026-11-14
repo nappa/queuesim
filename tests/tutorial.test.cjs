@@ -13,7 +13,7 @@ function snapshot(network) {
     stages: network.stages.map(({ model }) => [model.arrived, model.served, model.queue.items, model.queue.head, model.servers]) });
 }
 test("comparison shares arrival times and per-customer service requirements", () => {
-  const models = [3, 4].map(servers => new context.Comparison({ arrivalsPerHour: 100, servicesPerHour: 30, servers, arrivalCv: 1 }));
+  const models = [2, 3].map(servers => new context.Comparison({ arrivalsPerHour: 70, servicesPerHour: 30, servers, arrivalCv: 1 }));
   const samples = models.map(model => {
     const values = [], original = model.exponential.bind(model);
     model.exponential = mean => { const value = original(mean); values.push(value); return value; };
