@@ -996,7 +996,7 @@
               <li>サービス時間が少し長くなっただけで急に悪化する。</li>
             </ul>
             <p>下は<strong>1窓口・平均サービス時間1分</strong>の定常理論値です。到着間隔・サービス時間のばらつきはランダムです（専門的には「ポアソン到着・指数サービス」といい、窓口が1つの場合を「M/M/1」と呼びます）。サービス中の時間を含まない、行列での平均待ち時間を示します。</p>
-            <div class="learn-demo"><div><label for="tutorial-rho">利用率ρ：<output id="tutorial-rho-value" for="tutorial-rho">0.75（75%）</output></label><input type="range" id="tutorial-rho" min="0" max="110" step="1" value="75"><p>Wq = ρ ÷ (1 − ρ) × 平均サービス時間<br>この式は 0 ≤ ρ &lt; 1 で使います。</p></div><div class="learn-result" id="tutorial-wait-card" aria-live="polite">平均待ち時間<strong id="tutorial-wait">3.00 分</strong><span id="tutorial-status">安定していても、待ち時間は発生します。</span></div></div>
+            <div class="learn-demo"><div><label for="tutorial-rho">利用率ρ：<output id="tutorial-rho-value" for="tutorial-rho">0.75（75%）</output></label><input type="range" id="tutorial-rho" min="0" max="110" step="1" value="75"><p>Wq = ρ ÷ (1 − ρ) × 平均サービス時間<br>この式は 0 ≤ ρ &lt; 1 で使います。</p></div><div class="learn-result" id="tutorial-wait-card" aria-live="polite">平均待ち時間<strong id="tutorial-wait">3.00 分</strong><span id="tutorial-status">待ち時間は小さく安定しています</span></div></div>
             <figure class="lesson-visual"><svg id="tutorial-curve" viewBox="0 0 660 340" role="img" aria-labelledby="tutorial-curve-title tutorial-curve-description"><title id="tutorial-curve-title">利用率ρと平均待ち時間</title><desc id="tutorial-curve-description">横軸は利用率ρ、縦軸は平均待ち時間（分）。1窓口、平均サービス時間1分のM/M/1モデルでは、ρが1に近づくほど待ち時間が急増します。</desc><g id="tutorial-curve-drawing"></g></svg><figcaption class="lesson-caption">横軸ρ、縦軸Wq（分）。縦軸は0〜100分で固定。曲線はρ &lt; 1のみで、1に近づくとグラフの上限を超えて伸びます。点は上のスライダーの値です。02とは別の、1窓口の例です。</figcaption></figure>
             <table class="learn-table"><caption>同じ窓口でも、余裕でこれだけ変わる</caption><thead><tr><th scope="col">利用率ρ</th><th scope="col">平均待ち時間</th></tr></thead><tbody><tr><td><span class="rho-badge" data-rho-state="calm">0.50</span></td><td>1分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.80</span></td><td>4分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.90</span></td><td>9分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.95</span></td><td>19分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.99</span></td><td>99分</td></tr></tbody></table><p>複数窓口では数値が変わります。「基本（定常状態）」では窓口数と到着のばらつきも変更できます。</p><button type="button" class="learn-button" data-open-tab="steady">基本のシミュレーションで確かめる →</button>
           </section>
@@ -3743,7 +3743,7 @@
         markRho(el("tutorial-curve"), rho);
         el("tutorial-rho-value").textContent = rho.toFixed(2) + "（" + Math.round(rho * 100) + "%）";
         el("tutorial-wait").textContent = rho < 1 ? wait.toFixed(2) + " 分" : "∞";
-        el("tutorial-status").textContent = rho >= 1 ? "ρ ≥ 1 では、有限の平均待ち時間に落ち着きません。∞は定常理論値の発散を表します。" : rho >= 0.8 ? "余裕が小さく、平均待ち時間が急増します。" : "安定していても、待ち時間は発生します。";
+        el("tutorial-status").textContent = rho >= 1 ? "ρ ≥ 1 では、有限の平均待ち時間に落ち着きません。∞は定常理論値の発散を表します。" : rho >= 0.8 ? "余裕が小さく、平均待ち時間が急増します。" : "待ち時間は小さく安定しています";
         const x = r => 60 + r * 500, y = w => 285 - w * 2.3;
         let svg = `<rect x="460" y="55" width="100" height="230" fill="#e8bd20" opacity=".15"/><rect x="560" y="55" width="50" height="230" fill="var(--crit)" opacity=".12"/>`;
         for (const w of [0, 20, 40, 60, 80, 100]) svg += `<path d="M60 ${y(w)}H610" stroke="var(--line)"/><text x="50" y="${y(w)+5}" text-anchor="end">${w}</text>`;
