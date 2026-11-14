@@ -908,6 +908,13 @@
       .lesson-metrics { font-variant-numeric: tabular-nums; min-height: 3em; }
       .lesson-caption { color: var(--muted); font-size: 13px; }
       .lesson-visual figure { margin: 0; }
+      .pooling-summary, .pooling-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+      .pooling-card { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+      .pooling-summary strong { display: block; font-size: 32px; color: var(--accent); }
+      .pooling-summary .pooling-split strong { color: var(--crit); }
+      .pooling-focus { padding: 12px; background: var(--accent-soft); border-left: 4px solid var(--accent); }
+      .pooling-focus[data-active="true"] { background: color-mix(in srgb, var(--warn) 15%, var(--surface)); border-color: var(--warn); font-weight: 700; }
+      @media (max-width: 850px) { .pooling-layout { grid-template-columns: 1fr; } }
       .tutorial-player { position: relative; isolation: isolate; }
       .tutorial-play-overlay {
         position: absolute; inset: 0; z-index: 1;
@@ -949,7 +956,7 @@
           aria-selected="false"
           aria-controls="panel-steady"
         >
-          基本（定常状態）
+          基本（定常状態）シミュレーション
         </button>
         <button
           type="button"
@@ -959,7 +966,7 @@
           aria-selected="false"
           aria-controls="panel-day"
         >
-          開店時間シミュレーション
+          オープン時間シミュレーション
         </button>
         <button type="button" class="tab" id="tab-bottleneck" role="tab" aria-selected="false" aria-controls="panel-bottleneck">行列ボトルネック</button>
       </nav>
@@ -970,8 +977,8 @@
           <header class="learn-hero"><span class="learn-kicker">QUEUE SIMULATOR</span><h1>行列は、なぜ伸びる？</h1><p>窓口を増やす、到着を分散する、通路を広げる。待ち時間を減らす工夫を、3つのシミュレーションで試してみましょう。</p></header>
           <div class="menu-grid">
             <article class="menu-card"><h2>まずは仕組みを知る</h2><p>待ち行列理論と利用率ρを、数式・具体例・操作できる計算例で学びます。</p><button type="button" class="learn-button" data-open-tab="tutorial">チュートリアルを読む →</button></article>
-            <article class="menu-card"><h2>基本（定常状態）</h2><p>到着数・窓口数・ばらつきを変えて、利用率と待ち時間の関係を観察します。</p><button type="button" class="learn-button" data-open-tab="steady">基本を試す →</button></article>
-            <article class="menu-card"><h2>開店時間シミュレーション</h2><p>開店前の行列と時間帯ごとの混雑。先行受付と人員配置で、1日の流れを整えます。</p><button type="button" class="learn-button" data-open-tab="day">開店時間を試す →</button></article>
+            <article class="menu-card"><h2>基本（定常状態）シミュレーション</h2><p>到着数・窓口数・ばらつきを変えて、利用率と待ち時間の関係を観察します。</p><button type="button" class="learn-button" data-open-tab="steady">基本を試す →</button></article>
+            <article class="menu-card"><h2>オープン時間シミュレーション</h2><p>開店前の行列と時間帯ごとの混雑。先行受付と人員配置で、1日の流れを整えます。</p><button type="button" class="learn-button" data-open-tab="day">オープン時間を試す →</button></article>
             <article class="menu-card"><h2>行列ボトルネック</h2><p>窓口だけでは解決しない混雑。遅い歩行者や狭い通路が流れを制限する様子を見ます。</p><button type="button" class="learn-button" data-open-tab="bottleneck">通路を試す →</button></article>
           </div>
         </div>
@@ -1012,10 +1019,10 @@
             <p>下は<strong>1窓口・平均サービス時間1分</strong>の定常理論値です。到着間隔・サービス時間のばらつきはランダムです（専門的には「ポアソン到着・指数サービス」といい、窓口が1つの場合を「M/M/1」と呼びます）。サービス中の時間を含まない、行列での平均待ち時間を示します。</p>
             <div class="learn-demo"><div><label for="tutorial-rho">利用率ρ：<output id="tutorial-rho-value" for="tutorial-rho">0.75（75%）</output></label><input type="range" id="tutorial-rho" min="0" max="110" step="1" value="75"><p>Wq = ρ ÷ (1 − ρ) × 平均サービス時間<br>この式は 0 ≤ ρ &lt; 1 で使います。</p></div><div class="learn-result" id="tutorial-wait-card" aria-live="polite">平均待ち時間<strong id="tutorial-wait">3.00 分</strong><span id="tutorial-status">待ち時間は小さく安定しています</span></div></div>
             <figure class="lesson-visual"><svg id="tutorial-curve" viewBox="0 0 660 340" role="img" aria-labelledby="tutorial-curve-title tutorial-curve-description"><title id="tutorial-curve-title">利用率ρと平均待ち時間</title><desc id="tutorial-curve-description">横軸は利用率ρ、縦軸は平均待ち時間（分）。1窓口、平均サービス時間1分のM/M/1モデルでは、ρが1に近づくほど待ち時間が急増します。</desc><g id="tutorial-curve-drawing"></g></svg><figcaption class="lesson-caption">横軸ρ、縦軸Wq（分）。縦軸は0〜100分で固定。曲線はρ &lt; 1のみで、1に近づくとグラフの上限を超えて伸びます。点は上のスライダーの値です。02とは別の、1窓口の例です。</figcaption></figure>
-            <table class="learn-table"><caption>同じ窓口でも、余裕でこれだけ変わる</caption><thead><tr><th scope="col">利用率ρ</th><th scope="col">平均待ち時間</th></tr></thead><tbody><tr><td><span class="rho-badge" data-rho-state="calm">0.50</span></td><td>1分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.80</span></td><td>4分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.90</span></td><td>9分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.95</span></td><td>19分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.99</span></td><td>99分</td></tr></tbody></table><p>複数窓口では数値が変わります。「基本（定常状態）」では窓口数と到着のばらつきも変更できます。</p><button type="button" class="learn-button" data-open-tab="steady">基本のシミュレーションで確かめる →</button>
+            <table class="learn-table"><caption>同じ窓口でも、余裕でこれだけ変わる</caption><thead><tr><th scope="col">利用率ρ</th><th scope="col">平均待ち時間</th></tr></thead><tbody><tr><td><span class="rho-badge" data-rho-state="calm">0.50</span></td><td>1分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.80</span></td><td>4分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.90</span></td><td>9分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.95</span></td><td>19分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.99</span></td><td>99分</td></tr></tbody></table><p>複数窓口では数値が変わります。「基本（定常状態）シミュレーション」では窓口数と到着のばらつきも変更できます。</p><button type="button" class="learn-button" data-open-tab="steady">基本のシミュレーションで確かめる →</button>
           </section>
-          <section class="lesson"><h2>04 / 1を超え続けると、待ち時間は発散する</h2><p>ρが1を超えると、行列の長さは∞に発散し、待ち時間も∞に発散します。<br>この状態では待ち時間はどんどん長くなっていきます。</p><p><strong>ρ = 1 も安心ではありません。</strong>到着間隔やサービス時間にばらつきがあると、行列を吸収する余裕がなく、平均待ち時間は一定の値に落ち着きません。安定条件は ρ &lt; 1 です。</p><div class="lesson-visual"><p>到着120人/時、1窓口の処理能力100人/時（ρ = 1.20）。左から到着し、列に並び、窓口で処理されて右へ退出します。</p><div class="tutorial-player"><canvas id="tutorial-animation-4" style="display:block;width:100%;height:320px" role="img" aria-label="客が左から到着し、1本の列に並び、窓口で処理されて右へ退出する過負荷のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-animation-4"><button type="button" id="tutorial-overlay-animation-4-button" aria-label="04のアニメーションを再生">▶ 再生</button></div></div><p>時間が経つにつれて行列がどんどん長くなります。</p><p><span class="rho-badge" id="tutorial-utilization-4"></span></p><p class="lesson-metrics" id="tutorial-animation-status-4"></p><div class="tutorial-timeline"><label for="tutorial-time-4">経過時間：<output id="tutorial-time-value-4" for="tutorial-time-4">0.0 分 / 60分</output></label><input id="tutorial-time-4" type="range" min="0" max="60" step="0.1" value="0"><p class="lesson-caption">スライダーを動かすと、その時点へ移動して一時停止します。</p></div><div class="lesson-controls"><button type="button" class="learn-button" id="tutorial-play-4">再生</button><button type="button" class="learn-button" id="tutorial-reset-4">最初から</button></div><p class="lesson-caption">基本タブと同じM/M/1モデルと描画です。1人ずつの待ち時間・窓口の残り時間を表示します。到着と処理にばらつきがあるため、列は一時的に短くなることもあります。1秒で1分進み、60分で停止します。リセットすると同じ乱数シードで再開します。</p></div></section>
-          <section class="lesson"><h2>05 / ばらつきが大きくても、ρが小さければ待ち時間は収束する</h2>
+          <section class="lesson"><h2>04 / ρが1を超え続けると、待ち時間は発散する</h2><p>ρが1を超えると、行列の長さは∞に発散し、待ち時間も∞に発散します。<br>この状態では待ち時間はどんどん長くなっていきます。</p><p><strong>ρ = 1 も安心ではありません。</strong>到着間隔やサービス時間にばらつきがあると、行列を吸収する余裕がなく、平均待ち時間は一定の値に落ち着きません。安定条件は ρ &lt; 1 です。</p><div class="lesson-visual"><p>到着120人/時、1窓口の処理能力100人/時（ρ = 1.20）。左から到着し、列に並び、窓口で処理されて右へ退出します。</p><div class="tutorial-player"><canvas id="tutorial-animation-4" style="display:block;width:100%;height:320px" role="img" aria-label="客が左から到着し、1本の列に並び、窓口で処理されて右へ退出する過負荷のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-animation-4"><button type="button" id="tutorial-overlay-animation-4-button" aria-label="04のアニメーションを再生">▶ 再生</button></div></div><p>時間が経つにつれて行列がどんどん長くなります。</p><p><span class="rho-badge" id="tutorial-utilization-4"></span></p><p class="lesson-metrics" id="tutorial-animation-status-4"></p><div class="tutorial-timeline"><label for="tutorial-time-4">経過時間：<output id="tutorial-time-value-4" for="tutorial-time-4">0.0 分 / 60分</output></label><input id="tutorial-time-4" type="range" min="0" max="60" step="0.1" value="0"><p class="lesson-caption">スライダーを動かすと、その時点へ移動して一時停止します。</p></div><div class="lesson-controls"><button type="button" class="learn-button" id="tutorial-play-4">再生</button><button type="button" class="learn-button" id="tutorial-reset-4">最初から</button></div><p class="lesson-caption">基本タブと同じM/M/1モデルと描画です。1人ずつの待ち時間・窓口の残り時間を表示します。到着と処理にばらつきがあるため、列は一時的に短くなることもあります。1秒で1分進み、60分で停止します。リセットすると同じ乱数シードで再開します。</p></div></section>
+          <section class="lesson"><h2>05 / 到着のばらつきによらず、ρが小さければ待ち時間は収束する</h2>
             <p>客が集中すると、一時的に窓口でさばききれず、待ち時間が発生します。<br>しかしρの値が1よりも十分に小さければ、そのばらつきを受け止めて、平均待ち時間を小さくできます。</p>
             <p>ここでは到着のばらつきだけを変えてみましょう。<br>平均到着数45人/時、1窓口のサービス数60人/時、ρ = 0.75は同じです。</p>
             <div class="lesson-visual">
@@ -1031,7 +1038,7 @@
             </div>
             <button type="button" class="learn-button" data-open-tab="steady">基本のシミュレーションでさらに試す →</button>
           </section>
-          <section class="lesson"><h2>06 / 目標利用率は、まず60〜80%から考える</h2>
+          <section class="lesson"><h2>06 / 目標ρは、まず0.6〜0.8から考える</h2>
             <p>経験的には、ρ = 0.6〜0.8 程度がほどよい目安です。<br>（※普遍的な基準はありません、到着時間・対応時間のばらつきが大きい場合にはρ=0.5もよいでしょう）</p>
             <p>同じ客が来ても、窓口数が1つ変動するだけでρが大きく変わってしまうことがあります。<br>到着70人/時・1窓口30人/時を共通にして、同時に比較します。</p>
             <div class="lesson-visual">
@@ -1046,19 +1053,21 @@
             </div>
             <p><strong>窓口を増やすほど待ち時間は減りますが、追加費用もかかります。</strong>仮に1窓口2,000円/時なら、2窓口は4,000円/時、3窓口は6,000円/時です。さらに増やすべきかは、待ち時間短縮の価値と追加費用、サービス目標で判断します。</p></section>
           <section class="lesson"><h2>07 / 窓口の前・窓口の後にボトルネックを作らない</h2><div class="learn-flow" aria-label="入口から出口までの処理能力の例"><span>入口・事前確認<br><strong>60人/時</strong></span>→<span>窓口<br><strong>120人/時</strong></span>→<span>受け取り・出口<br><strong>50人/時</strong></span></div><p>全員がこの順で通るなら、全体の持続的な処理能力は最大でも50人/時です。窓口に余裕があっても、入口で待たされたり、出口で詰まったりします。出口の滞留が窓口をふさぐこともあります。</p><p>窓口のρだけを目標にするのではなく、入口・案内・受付・受け取り・通路・出口の待ち人数と能力を確認しましょう。「行列ボトルネック」では通路の狭さや遅い歩行者による滞留を観察できます。窓口との連結モデルではなく、通路単体の例です。</p><button type="button" class="learn-button" data-open-tab="bottleneck">通路のボトルネックを観察する →</button><div class="lesson-visual"><p>どちらも到着90人/時、主窓口は4窓口 × 30人/時 = 120人/時です。窓口の前と後の処理能力だけを変えて比べます。</p><div class="tutorial-timeline"><label for="tutorial-time-7">経過時間：<output id="tutorial-time-value-7" for="tutorial-time-7">0.0 分 / 60分</output></label><input id="tutorial-time-7" type="range" min="0" max="60" step="0.1" value="0"><p class="lesson-caption">スライダーを動かすと、その時点へ移動して一時停止します。</p></div><div class="lesson-controls"><button type="button" class="learn-button" id="tutorial-play-7">再生</button><button type="button" class="learn-button" id="tutorial-reset-7">両方を最初から</button></div><p class="lesson-metrics" id="tutorial-animation-status-7"></p><section class="network-example"><h3>窓口の前で詰まる：事前確認が60人/時</h3><p>上から順に、事前確認 → 主窓口 → 受け取りを通ります。同じ客が前の工程を終えて次へ進みます。</p><h4>① 事前確認（窓口の前）：合計60人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-before-0" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の前で詰まる：事前確認が60人/時・① 事前確認（窓口の前）の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-before-0"><button type="button" id="tutorial-overlay-network-before-0-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><h4>② 主窓口：合計120人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-before-1" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の前で詰まる：事前確認が60人/時・② 主窓口の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-before-1"><button type="button" id="tutorial-overlay-network-before-1-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><h4>③ 受け取り（窓口の後）：合計120人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-before-2" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の前で詰まる：事前確認が60人/時・③ 受け取り（窓口の後）の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-before-2"><button type="button" id="tutorial-overlay-network-before-2-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-network-status-before"></p></section><section class="network-example"><h3>窓口の後で詰まる：受け取りが50人/時</h3><p>上から順に、事前確認 → 主窓口 → 受け取りを通ります。同じ客が前の工程を終えて次へ進みます。</p><h4>① 事前確認（窓口の前）：合計120人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-after-0" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の後で詰まる：受け取りが50人/時・① 事前確認（窓口の前）の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-after-0"><button type="button" id="tutorial-overlay-network-after-0-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><h4>② 主窓口：合計120人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-after-1" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の後で詰まる：受け取りが50人/時・② 主窓口の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-after-1"><button type="button" id="tutorial-overlay-network-after-1-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><h4>③ 受け取り（窓口の後）：合計50人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-after-2" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の後で詰まる：受け取りが50人/時・③ 受け取り（窓口の後）の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-after-2"><button type="button" id="tutorial-overlay-network-after-2-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-network-status-after"></p></section><p>入口側が遅いと、主窓口が空いていても手前の列が伸びます。出口側が遅いと、主窓口を通った客がその先で並びます。</p><p class="lesson-caption">各工程で基本タブと同じ人物・窓口表示を使う連結モデルです。到着はポアソン過程、サービス時間は指数分布。待機場所の上限・工程間の移動時間は省略しています。出口の列が主窓口をふさぐ現象は扱いません。1秒で1分進み、60分で停止します。どちらの例にも同じ時刻に客が到着します。</p></div></section>
-          <section class="lesson"><h2>08 / 窓口を分散すると、混み具合の偏りを吸収しにくい</h2>
+          <section class="lesson"><h2>08 / 窓口が分散すると、混み具合の偏りを吸収しにくい</h2>
             <p>窓口が全部で4つあるとき、<strong>1か所に4窓口をまとめる</strong>場合と、<strong>2か所に2窓口ずつ分ける</strong>場合を比べます。到着する客も、1人ずつのサービス時間も同じです。</p>
             <p>1か所なら、1本の列から空いた窓口へ案内できます。2か所に分けると、片方で列が伸びていても、もう片方の空き窓口を使えません。そのため場所ごとの混み具合や待ち時間に差が生まれやすくなります。</p>
             <p>到着そのもののばらつきが増えるのではなく、<strong>分散すると、ばらつきによる偏りを吸収しにくくなる</strong>ということです。同じρでも、窓口をどうまとめるかによって待ち時間は変わります。</p>
             <div class="lesson-visual">
-              <p>到着90人/時・1窓口30人/時・合計4窓口。全体のρはどちらも0.75です。分散側では客をA・Bへ50%ずつランダムに振り分け、並んだ後は場所を移りません。各場所への平均到着数は45人/時ですが、実際の人数は偏ります。</p>
+              <p>到着102人/時・1窓口30人/時・合計4窓口。全体のρはどちらも0.85です。差が見えやすいよう、最初はAに80%・Bに20%の客が来る例を表示します。どちらに並ぶかは確率で決まり、並んだ後は場所を移りません。</p>
+              <div class="lesson-controls"><button type="button" class="learn-button" id="tutorial-pooling-biased" aria-pressed="true">偏りあり：A80% / B20%</button><button type="button" class="learn-button" id="tutorial-pooling-balanced" aria-pressed="false">均等：A50% / B50%</button><button type="button" class="learn-button" id="tutorial-pooling-preview">30分後を比較</button></div><p id="tutorial-pooling-route-note"></p>
+              <div class="pooling-summary"><div class="pooling-card">1か所・4窓口<strong id="tutorial-pooling-count-one">待ち 0人</strong><span id="tutorial-pooling-summary-one">平均待ち —</span></div><div class="pooling-card pooling-split">2か所・2＋2窓口<strong id="tutorial-pooling-count-two">待ち 0人</strong><span id="tutorial-pooling-summary-two">平均待ち —</span></div></div>
               <div class="tutorial-timeline"><label for="tutorial-time-8">経過時間：<output id="tutorial-time-value-8" for="tutorial-time-8">0.0 分 / 60分</output></label><input id="tutorial-time-8" type="range" min="0" max="60" step="0.1" value="0"><p class="lesson-caption">スライダーを動かすと、その時点へ移動して一時停止します。</p></div>
               <div class="lesson-controls"><button type="button" class="learn-button" id="tutorial-play-8">再生</button><button type="button" class="learn-button" id="tutorial-reset-8">両方を最初から</button></div>
               <p class="lesson-metrics" id="tutorial-animation-status-8"></p>
-              <h3>1か所にまとめる：4窓口・1本の列</h3><div class="tutorial-player"><canvas id="tutorial-pooling-pooled" style="display:block;width:100%;height:300px" role="img" aria-label="1か所にまとめる：4窓口・1本の列のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-pooling-pooled"><button type="button" id="tutorial-overlay-pooling-pooled-button" aria-label="08のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-pooling-status-pooled"></p>
-              <h3>2か所に分ける：場所A・2窓口</h3><div class="tutorial-player"><canvas id="tutorial-pooling-a" style="display:block;width:100%;height:300px" role="img" aria-label="2か所に分ける：場所A・2窓口のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-pooling-a"><button type="button" id="tutorial-overlay-pooling-a-button" aria-label="08のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-pooling-status-a"></p>
-              <h3>2か所に分ける：場所B・2窓口</h3><div class="tutorial-player"><canvas id="tutorial-pooling-b" style="display:block;width:100%;height:300px" role="img" aria-label="2か所に分ける：場所B・2窓口のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-pooling-b"><button type="button" id="tutorial-overlay-pooling-b-button" aria-label="08のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-pooling-status-b"></p>
-              <p id="tutorial-pooling-imbalance"></p>
+              <div class="pooling-layout"><div class="pooling-card"><h3>1か所：4窓口・1本の列</h3><span class="rho-badge" data-rho-state="tight">ρ = 0.85</span><div class="tutorial-player"><canvas id="tutorial-pooling-pooled" style="display:block;width:100%;height:440px" role="img" aria-label="1か所にまとめる：4窓口・1本の列のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-pooling-pooled"><button type="button" id="tutorial-overlay-pooling-pooled-button" aria-label="08のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-pooling-status-pooled"></p>
+              </div><div class="pooling-card"><h3>2か所：2＋2窓口</h3><h4>場所A <span class="rho-badge" id="tutorial-pooling-rho-a"></span></h4><div class="tutorial-player"><canvas id="tutorial-pooling-a" style="display:block;width:100%;height:210px" role="img" aria-label="2か所に分ける：場所A・2窓口のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-pooling-a"><button type="button" id="tutorial-overlay-pooling-a-button" aria-label="08のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-pooling-status-a"></p>
+              <h4>場所B <span class="rho-badge" id="tutorial-pooling-rho-b"></span></h4><div class="tutorial-player"><canvas id="tutorial-pooling-b" style="display:block;width:100%;height:210px" role="img" aria-label="2か所に分ける：場所B・2窓口のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-pooling-b"><button type="button" id="tutorial-overlay-pooling-b-button" aria-label="08のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-pooling-status-b"></p></div></div>
+              <p class="pooling-focus" id="tutorial-pooling-imbalance"></p>
               <table class="learn-table"><caption>待ち時間の比較（対応開始済みの客の実測値）</caption><thead><tr><th scope="col">配置</th><th scope="col">平均待ち時間</th><th scope="col">待ち時間のばらつき<br>（標準偏差）</th></tr></thead><tbody><tr><th scope="row">1か所</th><td id="tutorial-pooling-mean-one">—</td><td id="tutorial-pooling-spread-one">—</td></tr><tr><th scope="row">2か所の合計</th><td id="tutorial-pooling-mean-two">—</td><td id="tutorial-pooling-spread-two">—</td></tr></tbody></table>
               <p class="lesson-caption">標準偏差は、客ごとの待ち時間が平均からどれくらい散らばるかを示します。数字が大きいほど、待ち時間の差が大きいという意味です。2か所の実測平均は客数で重みづけして計算します。</p>
               <p id="tutorial-pooling-theory"></p>
@@ -1245,7 +1254,7 @@
       >
         <aside class="panel">
           <header class="panel-head">
-            <h1>開店時間シミュレーション</h1>
+            <h1>オープン時間シミュレーション</h1>
             <p class="sub">12:00 一斉オープン · 13:00 シミュレーション終了</p>
           </header>
 
@@ -1352,7 +1361,7 @@
 
         <main class="stage stage-day">
           <section class="scene-wrap">
-            <canvas id="d-scene" aria-label="開店時間のアニメーション"></canvas>
+            <canvas id="d-scene" aria-label="オープン時間のアニメーション"></canvas>
             <div class="scene-clock">
               <span id="d-clock">10:00</span>
               <i id="d-clock-sub">開店まで 120 分</i>
@@ -1395,7 +1404,7 @@
           <div class="control"><label for="b-speed"><span class="control-name">再生速度</span><output class="control-value" id="b-speed-out"></output></label><input type="range" id="b-speed" min="1" max="20" step="1" value="4" data-unit="倍"></div>
           <label class="check"><input type="checkbox" id="b-pass" checked>空いていれば追い越す</label>
           <div class="b-actions"><button type="button" id="b-toggle">一時停止</button><button type="button" id="b-reset">同じ条件でリセット</button></div>
-          <p class="theory-note">条件を変えると最初から再計算します（再生速度を除く）。狭窄部の幅は通路幅以下になります。</p>
+          <p class="theory-note">条件やプリセットを変えても時間・人数・統計は引き継ぎます。スマホ歩行者の割合は新しく到着する客から適用します。幅を狭めると、入れなくなった客は上流の空きマスか入口待機へ移ります。最初から試す場合はリセットしてください。</p>
           <footer class="panel-foot"><p>1マス0.6m、長さ36mの簡易歩行モデル。スマホ歩行者は遅く歩き、ときどき1〜3秒立ち止まります。実測に基づく混雑・避難予測ではありません。</p></footer>
         </aside>
         <main class="stage stage-bottleneck">
@@ -2552,7 +2561,7 @@
       });
 
       // =====================================================================
-      // 開店時間シミュレーション
+      // オープン時間シミュレーション
       //
       // 10:00 から窓口の前に行列ができ始め、12:00 に全窓口が一斉オープン、
       // 13:00でシミュレーションを終了し、残っている客も結果に含める。
@@ -3532,6 +3541,39 @@
           this.history = [{ t: 0, q: 0 }];
           this.hazard = -Math.log(1 - this.random());
         }
+        setConfig(next) {
+          const changedShape = next.width !== this.config.width || next.neck !== this.config.neck;
+          this.config = { ...next };
+          if (!changedShape) return;
+          // 幅の変更で壁に重なる人だけを、同じ位置か上流の空きマスに移す。
+          // 入りきらない人は到着時刻を保って入口の待ち列へ戻す。
+          const displaced = this.people.filter(p => !this.allowed(p.x, p.lane)).sort((a, b) => b.x - a.x);
+          this.people = this.people.filter(p => this.allowed(p.x, p.lane));
+          const occupied = new Set(this.people.map(p => p.x * 4 + p.lane));
+          const returned = [];
+          for (const person of displaced) {
+            let position = null;
+            for (let x = person.x; x >= 0 && !position; x--) {
+              const lanes = Array.from({ length: this.config.width }, (_, lane) => lane)
+                .sort((a, b) => Math.abs(a - person.lane) - Math.abs(b - person.lane));
+              for (const lane of lanes) {
+                if (this.allowed(x, lane) && !occupied.has(x * 4 + lane)) {
+                  position = { x, lane }; break;
+                }
+              }
+            }
+            person.credit = 0; person.blocked = false;
+            if (position) {
+              Object.assign(person, position);
+              occupied.add(person.x * 4 + person.lane);
+              this.people.push(person);
+            } else {
+              person.x = 0; person.lane = 0;
+              returned.push(person);
+            }
+          }
+          for (let i = returned.length - 1; i >= 0; i--) this.pending.unshift(returned[i]);
+        }
         allowed(x, lane) {
           const c = this.config;
           const start = Math.floor((c.width - c.neck) / 2);
@@ -3615,7 +3657,7 @@
       const bKeys = ["arrival", "phone", "walk", "slow", "width", "neck", "speed"];
       let bottleneckSim;
       let bottleneckRunning = true;
-      function resetBottleneck() {
+      function readBottleneckConfig() {
         el("b-neck").max = el("b-width").value;
         el("b-neck").value = Math.min(+el("b-neck").value, +el("b-width").value);
         const config = { pass: el("b-pass").checked };
@@ -3624,13 +3666,19 @@
           config[key] = +input.value;
           el("b-" + key + "-out").textContent = input.value + " " + input.dataset.unit;
         }
-        bottleneckSim = new BottleneckSim(config);
+        return config;
+      }
+      function resetBottleneck() {
+        bottleneckSim = new BottleneckSim(readBottleneckConfig());
+      }
+      function updateBottleneckConfig() {
+        bottleneckSim.setConfig(readBottleneckConfig());
       }
       for (const key of bKeys) el("b-" + key).addEventListener("input", () => {
         if (key === "speed") el("b-speed-out").textContent = el("b-speed").value + " 倍";
-        else resetBottleneck();
+        else updateBottleneckConfig();
       });
-      el("b-pass").addEventListener("change", resetBottleneck);
+      el("b-pass").addEventListener("change", updateBottleneckConfig);
       el("b-reset").addEventListener("click", resetBottleneck);
       el("b-toggle").addEventListener("click", () => {
         bottleneckRunning = !bottleneckRunning;
@@ -3646,7 +3694,7 @@
         el("b-walk").value = 1.2;
         el("b-slow").value = 0.4;
         el("b-pass").checked = true;
-        resetBottleneck();
+        updateBottleneckConfig();
       }));
       resetBottleneck();
 
@@ -3900,21 +3948,21 @@
         }
       }
       class TutorialPooling {
-        constructor() { this.reset(); }
+        constructor(routeProbability = 0.8) { this.routeProbability = routeProbability; this.reset(); }
         reset() {
           this.clock = 0; this.arrived = 0; this.imbalanceMinutes = 0;
           this.arrivalRandom = makeRng(0x5eed1234);
           this.serviceRandom = makeRng(0x1234abcd);
           this.routeRandom = makeRng(0x087a021);
           this.nextArrival = this.arrivalAfter(0);
-          this.items = [["pooled", 4, 90], ["a", 2, 45], ["b", 2, 45]].map(([key, servers, rate]) => {
+          this.items = [["pooled", 4, 102], ["a", 2, 102 * this.routeProbability], ["b", 2, 102 * (1 - this.routeProbability)]].map(([key, servers, rate]) => {
             const model = new TutorialPoolingStation({ arrivalsPerHour: 0, servicesPerHour: 30, servers, arrivalCv: 1 });
             model.params.arrivalsPerHour = rate;
             return { key, model, dots: new Map(), pulses: [] };
           });
         }
         arrivalAfter(time) {
-          return time - 60 / 90 * Math.log(Math.max(this.arrivalRandom(), 1e-12));
+          return time - 60 / 102 * Math.log(Math.max(this.arrivalRandom(), 1e-12));
         }
         imbalanced() {
           const a = this.items[1].model, b = this.items[2].model;
@@ -3942,7 +3990,7 @@
             }
             if (this.nextArrival <= at) {
               const customer = { id: ++this.arrived, arrived: at, serviceTime: -2 * Math.log(Math.max(this.serviceRandom(), 1e-12)) };
-              const route = this.routeRandom() < 0.5 ? 1 : 2;
+              const route = this.routeRandom() < this.routeProbability ? 1 : 2;
               for (const index of [0, route]) {
                 const model = this.items[index].model;
                 model.arrived++; model.queue.push({ ...customer });
@@ -3996,8 +4044,16 @@
             el("tutorial-pooling-mean-" + key).textContent = stats.count ? stats.mean.toFixed(2) + " 分" : "—";
             el("tutorial-pooling-spread-" + key).textContent = stats.count ? stats.spread.toFixed(2) + " 分" : "—";
           }
+          const [pooled, left, right] = tutorialPooling.items.map(item => item.model);
+          el("tutorial-pooling-count-one").textContent = `待ち ${pooled.queue.length}人`;
+          el("tutorial-pooling-count-two").textContent = `待ち ${left.queue.length + right.queue.length}人`;
+          for (const [key, indices] of [["one", [0]], ["two", [1, 2]]]) {
+            const stats = tutorialPooling.waitingStats(indices);
+            el("tutorial-pooling-summary-" + key).textContent = stats.count ? `平均待ち ${stats.mean.toFixed(2)}分` : "平均待ち —";
+          }
+          el("tutorial-pooling-imbalance").dataset.active = String(tutorialPooling.imbalanced());
           el("tutorial-pooling-imbalance").textContent = (tutorialPooling.imbalanced() ? "いま、一方で客が待っているのに他方の窓口が空いています。" : "いまは、待ち客と他方の空き窓口の同時発生はありません。") + ` この偏りが起きた時間の合計：${tutorialPooling.imbalanceMinutes.toFixed(2)}分。`;
-          status = `${time.toFixed(1)}分経過 / どちらも合計 ${tutorialPooling.arrived}人が到着 / 全体のρ = 0.75`;
+          status = `${time.toFixed(1)}分経過 / どちらも合計 ${tutorialPooling.arrived}人が到着 / 全体のρ = 0.85`;
         }
         const rho = a.id === 4 ? 1.2 : a.id === 5 ? 0.75 : 0.5;
         if (a.id === 4 || a.id === 5) {
@@ -4062,9 +4118,34 @@
         resetTutorialVariation();
         renderTutorialAnimation(tutorialAnimations[1]);
       });
-      const pooledTheory = theoryOf({ arrivalsPerHour: 90, servicesPerHour: 30, servers: 4, arrivalCv: 1 });
-      const splitTheory = theoryOf({ arrivalsPerHour: 45, servicesPerHour: 30, servers: 2, arrivalCv: 1 });
-      el("tutorial-pooling-theory").textContent = `この条件で長く運用したときの理論上の平均待ち時間は、1か所なら約${pooledTheory.wq.toFixed(2)}分、2か所に分けると約${splitTheory.wq.toFixed(2)}分です。上の表は60分以内の実測値なので、理論値とは一致しません。`;
+      function updatePoolingRoute() {
+        const p = tutorialPooling.routeProbability;
+        el("tutorial-pooling-biased").ariaPressed = String(p === 0.8);
+        el("tutorial-pooling-balanced").ariaPressed = String(p === 0.5);
+        for (const [key, fraction] of [["a", p], ["b", 1 - p]]) {
+          const rho = 102 * fraction / 60;
+          const badge = el("tutorial-pooling-rho-" + key);
+          markRho(badge, rho);
+          badge.textContent = `ρ = ${rho.toFixed(2)}`;
+        }
+        el("tutorial-pooling-route-note").textContent = p === 0.8
+          ? "偏りを強めた例：Aには平均81.6人/時（能力60人/時）、Bには20.4人/時。全体の能力は足りていても、Aだけは処理能力を超えます。"
+          : "均等に振り分ける例：A・Bそれぞれ平均51人/時。長期の比率は同じでも、到着や対応時間の偶然の偏りが生じます。";
+        const pooled = theoryOf({ arrivalsPerHour: 102, servicesPerHour: 30, servers: 4, arrivalCv: 1 });
+        const split = theoryOf({ arrivalsPerHour: 51, servicesPerHour: 30, servers: 2, arrivalCv: 1 });
+        el("tutorial-pooling-theory").textContent = p === 0.8
+          ? `長く運用したとき、1か所の理論上の平均待ち時間は約${pooled.wq.toFixed(2)}分。2か所ではAのρが1を超え、有限の定常平均待ち時間がありません。上の表は有限時間の実測値です。`
+          : `長く運用したときの理論上の平均待ち時間：1か所は約${pooled.wq.toFixed(2)}分、2か所は約${split.wq.toFixed(2)}分。上の表は有限時間の実測値です。`;
+      }
+      for (const [id, p] of [["tutorial-pooling-biased", 0.8], ["tutorial-pooling-balanced", 0.5]]) {
+        el(id).addEventListener("click", () => {
+          tutorialPooling.routeProbability = p;
+          seekTutorial(tutorialAnimations[4], 0);
+          updatePoolingRoute();
+        });
+      }
+      el("tutorial-pooling-preview").addEventListener("click", () => seekTutorial(tutorialAnimations[4], 30));
+      updatePoolingRoute();
       updateTutorialLoad();
       updateTutorialCurve();
       let tutorialPaintAt = 0;
