@@ -959,7 +959,7 @@
           aria-selected="false"
           aria-controls="panel-day"
         >
-          開店日シミュレーション
+          開店時間シミュレーション
         </button>
         <button type="button" class="tab" id="tab-bottleneck" role="tab" aria-selected="false" aria-controls="panel-bottleneck">行列ボトルネック</button>
       </nav>
@@ -971,7 +971,7 @@
           <div class="menu-grid">
             <article class="menu-card"><h2>まずは仕組みを知る</h2><p>待ち行列理論と利用率ρを、数式・具体例・操作できる計算例で学びます。</p><button type="button" class="learn-button" data-open-tab="tutorial">チュートリアルを読む →</button></article>
             <article class="menu-card"><h2>基本（定常状態）</h2><p>到着数・窓口数・ばらつきを変えて、利用率と待ち時間の関係を観察します。</p><button type="button" class="learn-button" data-open-tab="steady">基本を試す →</button></article>
-            <article class="menu-card"><h2>開店日シミュレーション</h2><p>開店前の行列と時間帯ごとの混雑。先行受付と人員配置で、1日の流れを整えます。</p><button type="button" class="learn-button" data-open-tab="day">開店日を試す →</button></article>
+            <article class="menu-card"><h2>開店時間シミュレーション</h2><p>開店前の行列と時間帯ごとの混雑。先行受付と人員配置で、1日の流れを整えます。</p><button type="button" class="learn-button" data-open-tab="day">開店時間を試す →</button></article>
             <article class="menu-card"><h2>行列ボトルネック</h2><p>窓口だけでは解決しない混雑。遅い歩行者や狭い通路が流れを制限する様子を見ます。</p><button type="button" class="learn-button" data-open-tab="bottleneck">通路を試す →</button></article>
           </div>
         </div>
@@ -1226,8 +1226,8 @@
       >
         <aside class="panel">
           <header class="panel-head">
-            <h1>開店日シミュレーション</h1>
-            <p class="sub">12:00 一斉オープン · 16:00 受付終了</p>
+            <h1>開店時間シミュレーション</h1>
+            <p class="sub">12:00 一斉オープン · 13:00 シミュレーション終了</p>
           </header>
 
           <div class="group">
@@ -1249,17 +1249,14 @@
               </label>
               <input id="d-pre" type="range" min="0.3" max="8" step="0.1" value="1.5" />
             </div>
-            <label class="check">
-              <input id="d-after" type="checkbox" checked />
-              <span>開店後も行列で受付を続ける</span>
-            </label>
+            <p class="hint">先行受付は12:00のオープン時に終了します。受付途中の客は未受付として扱います。</p>
           </div>
 
           <div class="group">
             <h2 class="group-head">窓口のサービス時間</h2>
             <div class="control">
               <label for="d-normal">
-                <span class="control-name">受付していない客</span>
+                <span class="control-name">未受付の客</span>
                 <output id="d-normal-out" class="control-value">4.0<i>分</i></output>
               </label>
               <input id="d-normal" type="range" min="0.5" max="15" step="0.5" value="4" />
@@ -1329,14 +1326,14 @@
 
           <footer class="panel-foot">
             <p>
-              16:00 で到着は止まり、残った客をさばき終わるまで窓口は開け続けます。
+              13:00でシミュレーションを停止し、その時点の待ち人数と対応中の人数を表示します。
             </p>
           </footer>
         </aside>
 
         <main class="stage stage-day">
           <section class="scene-wrap">
-            <canvas id="d-scene" aria-label="開店日のアニメーション"></canvas>
+            <canvas id="d-scene" aria-label="開店時間のアニメーション"></canvas>
             <div class="scene-clock">
               <span id="d-clock">10:00</span>
               <i id="d-clock-sub">開店まで 120 分</i>
@@ -1346,7 +1343,7 @@
           <section class="schedule">
             <div class="sched-head">
               <h2>時間帯ごとの到着数と窓口数</h2>
-              <span id="d-total">合計 560 人が来店する想定</span>
+              <span id="d-total">合計 300 人が来店する想定</span>
             </div>
             <div class="sched-grid" id="d-sched"></div>
           </section>
@@ -2532,10 +2529,10 @@
       });
 
       // =====================================================================
-      // 開店日シミュレーション
+      // 開店時間シミュレーション
       //
       // 10:00 から窓口の前に行列ができ始め、12:00 に全窓口が一斉オープン、
-      // 16:00 で受付終了（到着が止まる）。残った客はさばき終わるまで対応する。
+      // 13:00でシミュレーションを終了し、残っている客も結果に含める。
       //
       // 開店前の行列では係員が「先行受付」をして回る。受付を済ませた客は、
       // 窓口を短い時間で通過できる。
@@ -2543,8 +2540,8 @@
 
       const DAY_FROM = 10 * 60; // 10:00 行列ができ始める
       const DAY_OPEN = 12 * 60; // 12:00 一斉オープン
-      const DAY_CLOSE = 16 * 60; // 16:00 受付終了
-      const DAY_HOURS = [10, 11, 12, 13, 14, 15];
+      const DAY_CLOSE = 13 * 60; // シミュレーション終了
+      const DAY_HOURS = [10, 11, 12];
       const DAY_SAMPLE = 1; // グラフの記録間隔（分）
 
       class DaySim {
@@ -2587,7 +2584,7 @@
           return -mean * Math.log(Math.max(this.random(), 1e-12));
         }
 
-        /** その時刻の到着率（人/分）。16:00 以降は 0。 */
+        /** その時刻の到着率（人/分）。13:00 以降は 0。 */
         rateAt(t) {
           if (t >= DAY_CLOSE) return 0;
           return (this.config.arrivals[Math.floor(t / 60)] ?? 0) / 60;
@@ -2596,7 +2593,7 @@
         /** その時刻に開いている窓口数。12:00 より前は 0。 */
         windowsAt(t) {
           if (t < DAY_OPEN) return 0;
-          const hour = Math.min(15, Math.floor(t / 60));
+          const hour = Math.min(12, Math.floor(t / 60));
           return this.config.windows[hour] ?? 0;
         }
 
@@ -2689,7 +2686,7 @@
           }
         }
 
-        /** 行列の前のほうから、まだ受付していない客を探す。 */
+        /** 行列の前のほうから、まだ未受付の客を探す。 */
         findUnregistered() {
           for (let i = 0; i < this.queue.length; i += 1) {
             const customer = this.queue.at(i);
@@ -2701,7 +2698,7 @@
         /** 手の空いた係員に、行列の客を割り当てる。 */
         assignDesks() {
           if (this.desks.length === 0) return;
-          if (!this.config.preAfterOpen && this.clock >= DAY_OPEN) return;
+          if (this.clock >= DAY_OPEN) return;
           for (let i = 0; i < this.desks.length; i += 1) {
             if (this.desks[i]) continue;
             const customer = this.findUnregistered();
@@ -2761,6 +2758,9 @@
             }
           }
 
+          // オープン時に先行受付を終了。ちょうど開店時刻に完了した客は受付済み。
+          if (t >= DAY_OPEN) this.syncDesks();
+
           // 時間帯の切り替わり
           if (t >= this.boundaryDue) {
             this.applyWindows();
@@ -2799,8 +2799,8 @@
         }
 
         advance(dt) {
-          if (this.finishedAt !== null || !(dt > 0)) return;
-          const target = this.clock + dt;
+          if (this.clock >= DAY_CLOSE || this.finishedAt !== null || !(dt > 0)) return;
+          const target = Math.min(DAY_CLOSE, this.clock + dt);
           let guard = 0;
           for (;;) {
             const eventAt = this.nextEventTime();
@@ -2817,7 +2817,7 @@
 
         /** 係員の人数が変わったら、はみ出た机の作業は取り消す。 */
         syncDesks() {
-          const want = this.config.preStaff;
+          const want = this.clock < DAY_OPEN ? this.config.preStaff : 0;
           if (this.desks.length === want) return;
           if (want < this.desks.length) {
             for (const desk of this.desks.splice(want)) {
@@ -2855,13 +2855,12 @@
       // ---------- 設定 ----------
 
       const dayConfig = {
-        arrivals: { 10: 30, 11: 90, 12: 180, 13: 120, 14: 80, 15: 60 },
-        windows: { 12: 6, 13: 5, 14: 4, 15: 3 },
+        arrivals: { 10: 30, 11: 90, 12: 180 },
+        windows: { 12: 6 },
         preStaff: 3,
         preMean: 1.5,
         shortService: 1,
         normalService: 4,
-        preAfterOpen: true,
       };
 
       const daySim = new DaySim(dayConfig);
@@ -2873,7 +2872,7 @@
 
       const dui = {
         staff: el("d-staff"), staffOut: el("d-staff-out"), staffCap: el("d-staff-cap"),
-        pre: el("d-pre"), preOut: el("d-pre-out"), after: el("d-after"),
+        pre: el("d-pre"), preOut: el("d-pre-out"),
         normal: el("d-normal"), normalOut: el("d-normal-out"),
         short: el("d-short"), shortOut: el("d-short-out"), gain: el("d-gain"),
         speed: el("d-speed"), speedOut: el("d-speed-out"),
@@ -2938,7 +2937,6 @@
         dayConfig.preMean = Number(dui.pre.value);
         dayConfig.normalService = Number(dui.normal.value);
         dayConfig.shortService = Number(dui.short.value);
-        dayConfig.preAfterOpen = dui.after.checked;
         daySim.syncDesks();
         daySim.applyWindows();
         dayReadoutsAt = 0;
@@ -2947,7 +2945,6 @@
       for (const input of [dui.staff, dui.pre, dui.normal, dui.short]) {
         input.addEventListener("input", pushDayConfig);
       }
-      dui.after.addEventListener("change", pushDayConfig);
 
       dui.speed.addEventListener("input", () => {
         daySpeed = Number(dui.speed.value);
@@ -2955,7 +2952,10 @@
       });
 
       dui.toggle.addEventListener("click", () => {
-        dayRunning = !dayRunning;
+        if (daySim.clock >= DAY_CLOSE) {
+          daySim.reset(); dayDots.clear(); dayPulses.length = 0;
+          dayRunning = true; dayReadoutsAt = 0;
+        } else dayRunning = !dayRunning;
         dui.toggle.textContent = dayRunning ? "一時停止" : "再開";
       });
 
@@ -3001,13 +3001,13 @@
           dui.clockSub.textContent = `開店まで ${Math.ceil(DAY_OPEN - s.clock)} 分`;
           dui.phase.textContent = "開店前";
         } else if (s.clock < DAY_CLOSE) {
-          dui.clockSub.textContent = `窓口 ${s.windows} · 受付終了まで ${Math.ceil(
+          dui.clockSub.textContent = `窓口 ${s.windows} · 終了まで ${Math.ceil(
             DAY_CLOSE - s.clock
           )} 分`;
           dui.phase.textContent = "営業中";
         } else {
-          dui.clockSub.textContent = `残り ${s.queueLen + s.busy} 人をさばいています`;
-          dui.phase.textContent = "受付終了後";
+          dui.clockSub.textContent = `13:00で停止：待ち ${s.queueLen} 人・対応中 ${s.busy} 人`;
+          dui.phase.textContent = "シミュレーション終了";
         }
 
         setValue(dui.maxq, String(s.maxQueue), "人");
@@ -3019,21 +3019,14 @@
         dui.finish.textContent =
           s.finishedAt === null ? "—" : formatTime(s.finishedAt);
 
-        const over = s.finishedAt !== null ? s.finishedAt - DAY_CLOSE : 0;
-        if (s.finishedAt !== null) {
-          dui.result.dataset.state = over > 30 ? "unstable" : "";
-          dui.note.textContent =
-            over > 0.5
-              ? `受付終了から ${Math.round(over)} 分あふれました。` +
-                `先行受付を増やすか、窓口を増やすと縮みます。`
-              : "受付終了と同時にさばき終えました。";
+        if (s.clock >= DAY_CLOSE) {
+          dui.result.dataset.state = s.queueLen + s.busy > 0 ? "unstable" : "";
+          dui.note.textContent = `13:00時点：未完了 ${s.queueLen + s.busy} 人（待ち ${s.queueLen} 人・対応中 ${s.busy} 人）。`;
         } else {
           delete dui.result.dataset.state;
-          dui.note.textContent =
-            dayConfig.preStaff === 0
-              ? "先行受付なし。全員が通常のサービス時間で窓口を通ります。"
-              : `先行受付 ${s.registered} 人完了。済んだ客は窓口を ` +
-                `${dayConfig.shortService.toFixed(1)} 分で通過します。`;
+          dui.note.textContent = dayConfig.preStaff === 0
+            ? "先行受付なし。全員が通常のサービス時間で窓口を通ります。"
+            : `先行受付 ${s.registered} 人完了。先行受付は12:00で終了します。`;
         }
       }
 
@@ -3388,7 +3381,7 @@
         const top = 10;
         const bottom = height - 16;
         const history = daySim.history;
-        const endT = Math.max(DAY_CLOSE, daySim.clock, DAY_CLOSE + 30);
+        const endT = DAY_CLOSE;
 
         let peak = 1;
         for (const point of history) if (point.q > peak) peak = point.q;
@@ -3432,7 +3425,7 @@
         }
         for (const [t, label, color] of [
           [DAY_OPEN, "開店", palette.accent],
-          [DAY_CLOSE, "受付終了", palette.crit],
+          [DAY_CLOSE, "終了", palette.crit],
         ]) {
           const x = xAt(t);
           ctx.setLineDash([4, 3]);
@@ -4012,7 +4005,11 @@
           drawBottleneck();
         } else if (activeTab === "day") {
           if (dayRunning) daySim.advance(dt * daySpeed);
-          drawDayScene(dt);
+          if (daySim.clock >= DAY_CLOSE) {
+            dayRunning = false;
+            dui.toggle.textContent = "最初から再生";
+          }
+          drawDayScene(dayRunning ? dt : 0);
           drawDayChart();
           if (now - dayReadoutsAt > 100) {
             dayReadoutsAt = now;
