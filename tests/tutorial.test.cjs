@@ -7,7 +7,7 @@ const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const context = vm.createContext({});
 vm.runInContext(script.slice(0, script.indexOf("// ------------------------------------------------------------ 画面")) +
   script.slice(script.indexOf("class TutorialComparisonSim"), script.indexOf("const tutorialAnimations")) +
-  "globalThis.Comparison = TutorialComparisonSim; globalThis.Network = TutorialNetwork;", context);
+  "globalThis.Comparison = TutorialComparisonSim; globalThis.Network = TutorialNetwork; globalThis.Pooling = TutorialPooling;", context);
 function snapshot(network) {
   return JSON.stringify({ clock: Math.round(network.clock * 1e9) / 1e9, arrived: network.arrived, exited: network.exited,
     stages: network.stages.map(({ model }) => [model.arrived, model.served, model.queue.items, model.queue.head, model.servers]) });
@@ -62,4 +62,52 @@ test("network seek reproduces uninterrupted state and drains when arrivals stop"
   network.nextArrival = Infinity;
   network.advance(600);
   assert.equal(network.arrived, network.exited);
+});
+
+test("pooled and split layouts use identical customers and preserve headcounts", () => {
+  const comparison = new context.Pooling();
+  const serviceRecords = comparison.items.map(({ model }) => {
+    const records = new Map();
+    const duration = model.serviceDuration.bind(model);
+    model.serviceDuration = customer => {
+      records.set(customer.id, [customer.arrived, customer.serviceTime]);
+      return duration(customer);
+    };
+    return records;
+  });
+  for (let i = 0; i < 600; i++) {
+    comparison.advance(0.1);
+    const [pooled, a, b] = comparison.items.map(item => item.model);
+    assert.equal(pooled.arrived, a.arrived + b.arrived);
+    assert.equal(pooled.arrived, comparison.arrived);
+    for (const { model } of comparison.items) {
+      assert.equal(model.arrived, model.served + model.queue.length + model.busyCount());
+    }
+  }
+  assert.ok(comparison.imbalanceMinutes > 0);
+  for (const records of serviceRecords.slice(1)) {
+    for (const [id, data] of records) {
+      if (serviceRecords[0].has(id)) assert.deepEqual(data, serviceRecords[0].get(id));
+    }
+  }
+  assert.equal(new Set([...serviceRecords[1].keys(), ...serviceRecords[2].keys()]).size,
+    serviceRecords[1].size + serviceRecords[2].size);
+  // Statistics combine customers, not the unweighted averages of the two locations.
+  const [a, b] = comparison.items.slice(1).map(item => item.model);
+  assert.equal(comparison.waitingStats([1, 2]).mean, (a.waitSum + b.waitSum) / (a.waitN + b.waitN));
+  comparison.nextArrival = Infinity;
+  comparison.advance(600);
+  const [pooled, left, right] = comparison.items.map(item => item.model);
+  assert.equal(pooled.served, left.served + right.served);
+  assert.equal(pooled.served, comparison.arrived);
+});
+test("pooling seek and reset reproduce both layouts including imbalance time", () => {
+  const comparison = new context.Pooling();
+  const snapshot = () => JSON.stringify({ arrived: comparison.arrived, imbalance: comparison.imbalanceMinutes,
+    items: comparison.items.map(({ model }) => [model.queue.items, model.queue.head, model.servers, model.waitSum, model.waitSquareSum]) });
+  comparison.advance(30); const expected = snapshot();
+  comparison.advance(30); comparison.reset(); comparison.advance(30);
+  assert.equal(snapshot(), expected);
+  comparison.reset(); comparison.advance(10); comparison.advance(20);
+  assert.equal(snapshot(), expected);
 });

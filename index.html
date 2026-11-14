@@ -978,7 +978,7 @@
       </main>
       <main class="learn-page" id="panel-tutorial" role="tabpanel" aria-labelledby="tab-tutorial" tabindex="0" hidden>
         <div class="learn-content">
-          <header class="learn-hero"><span class="learn-kicker">TUTORIAL / 7 LESSONS</span><h1>待ち行列理論を5分で理解する。</h1><p>レーン数の最適値を計算する「待ち行列理論」を、ぱっと理解しましょう。</p></header>
+          <header class="learn-hero"><span class="learn-kicker">TUTORIAL / 8 LESSONS</span><h1>待ち行列理論を5分で理解する。</h1><p>レーン数の最適値を計算する「待ち行列理論」を、ぱっと理解しましょう。</p></header>
           <section class="lesson"><h2>01 / 待ち行列理論とは？</h2><p>人や仕事が到着し、順番を待ち、窓口で処理される仕組みを数学で扱うものです。</p><p>「レジ」「ATM」「もぎり」の数学、とも言えましょう。</p><p>このシミュレーターでは、その数学をわかりやすく学べます。</p></section>
           <section class="lesson"><h2>02 / 利用率ρ（ロー）とは？</h2>
             <p><strong>「客」</strong>とは、窓口での対応を受ける人です。レジの買い物客、ATMの利用者、もぎりを通る来場者などが当てはまります。</p>
@@ -1046,6 +1046,25 @@
             </div>
             <p><strong>窓口を増やすほど待ち時間は減りますが、追加費用もかかります。</strong>仮に1窓口2,000円/時なら、2窓口は4,000円/時、3窓口は6,000円/時です。さらに増やすべきかは、待ち時間短縮の価値と追加費用、サービス目標で判断します。</p></section>
           <section class="lesson"><h2>07 / 窓口の前・窓口の後にボトルネックを作らない</h2><div class="learn-flow" aria-label="入口から出口までの処理能力の例"><span>入口・事前確認<br><strong>60人/時</strong></span>→<span>窓口<br><strong>120人/時</strong></span>→<span>受け取り・出口<br><strong>50人/時</strong></span></div><p>全員がこの順で通るなら、全体の持続的な処理能力は最大でも50人/時です。窓口に余裕があっても、入口で待たされたり、出口で詰まったりします。出口の滞留が窓口をふさぐこともあります。</p><p>窓口のρだけを目標にするのではなく、入口・案内・受付・受け取り・通路・出口の待ち人数と能力を確認しましょう。「行列ボトルネック」では通路の狭さや遅い歩行者による滞留を観察できます。窓口との連結モデルではなく、通路単体の例です。</p><button type="button" class="learn-button" data-open-tab="bottleneck">通路のボトルネックを観察する →</button><div class="lesson-visual"><p>どちらも到着90人/時、主窓口は4窓口 × 30人/時 = 120人/時です。窓口の前と後の処理能力だけを変えて比べます。</p><div class="tutorial-timeline"><label for="tutorial-time-7">経過時間：<output id="tutorial-time-value-7" for="tutorial-time-7">0.0 分 / 60分</output></label><input id="tutorial-time-7" type="range" min="0" max="60" step="0.1" value="0"><p class="lesson-caption">スライダーを動かすと、その時点へ移動して一時停止します。</p></div><div class="lesson-controls"><button type="button" class="learn-button" id="tutorial-play-7">再生</button><button type="button" class="learn-button" id="tutorial-reset-7">両方を最初から</button></div><p class="lesson-metrics" id="tutorial-animation-status-7"></p><section class="network-example"><h3>窓口の前で詰まる：事前確認が60人/時</h3><p>上から順に、事前確認 → 主窓口 → 受け取りを通ります。同じ客が前の工程を終えて次へ進みます。</p><h4>① 事前確認（窓口の前）：合計60人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-before-0" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の前で詰まる：事前確認が60人/時・① 事前確認（窓口の前）の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-before-0"><button type="button" id="tutorial-overlay-network-before-0-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><h4>② 主窓口：合計120人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-before-1" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の前で詰まる：事前確認が60人/時・② 主窓口の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-before-1"><button type="button" id="tutorial-overlay-network-before-1-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><h4>③ 受け取り（窓口の後）：合計120人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-before-2" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の前で詰まる：事前確認が60人/時・③ 受け取り（窓口の後）の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-before-2"><button type="button" id="tutorial-overlay-network-before-2-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-network-status-before"></p></section><section class="network-example"><h3>窓口の後で詰まる：受け取りが50人/時</h3><p>上から順に、事前確認 → 主窓口 → 受け取りを通ります。同じ客が前の工程を終えて次へ進みます。</p><h4>① 事前確認（窓口の前）：合計120人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-after-0" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の後で詰まる：受け取りが50人/時・① 事前確認（窓口の前）の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-after-0"><button type="button" id="tutorial-overlay-network-after-0-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><h4>② 主窓口：合計120人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-after-1" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の後で詰まる：受け取りが50人/時・② 主窓口の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-after-1"><button type="button" id="tutorial-overlay-network-after-1-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><h4>③ 受け取り（窓口の後）：合計50人/時</h4><div class="tutorial-player"><canvas id="tutorial-network-after-2" style="display:block;width:100%;height:220px" role="img" aria-label="窓口の後で詰まる：受け取りが50人/時・③ 受け取り（窓口の後）の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-network-after-2"><button type="button" id="tutorial-overlay-network-after-2-button" aria-label="07のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-network-status-after"></p></section><p>入口側が遅いと、主窓口が空いていても手前の列が伸びます。出口側が遅いと、主窓口を通った客がその先で並びます。</p><p class="lesson-caption">各工程で基本タブと同じ人物・窓口表示を使う連結モデルです。到着はポアソン過程、サービス時間は指数分布。待機場所の上限・工程間の移動時間は省略しています。出口の列が主窓口をふさぐ現象は扱いません。1秒で1分進み、60分で停止します。どちらの例にも同じ時刻に客が到着します。</p></div></section>
+          <section class="lesson"><h2>08 / 窓口を分散すると、混み具合の偏りを吸収しにくい</h2>
+            <p>窓口が全部で4つあるとき、<strong>1か所に4窓口をまとめる</strong>場合と、<strong>2か所に2窓口ずつ分ける</strong>場合を比べます。到着する客も、1人ずつのサービス時間も同じです。</p>
+            <p>1か所なら、1本の列から空いた窓口へ案内できます。2か所に分けると、片方で列が伸びていても、もう片方の空き窓口を使えません。そのため場所ごとの混み具合や待ち時間に差が生まれやすくなります。</p>
+            <p>到着そのもののばらつきが増えるのではなく、<strong>分散すると、ばらつきによる偏りを吸収しにくくなる</strong>ということです。同じρでも、窓口をどうまとめるかによって待ち時間は変わります。</p>
+            <div class="lesson-visual">
+              <p>到着90人/時・1窓口30人/時・合計4窓口。全体のρはどちらも0.75です。分散側では客をA・Bへ50%ずつランダムに振り分け、並んだ後は場所を移りません。各場所への平均到着数は45人/時ですが、実際の人数は偏ります。</p>
+              <div class="tutorial-timeline"><label for="tutorial-time-8">経過時間：<output id="tutorial-time-value-8" for="tutorial-time-8">0.0 分 / 60分</output></label><input id="tutorial-time-8" type="range" min="0" max="60" step="0.1" value="0"><p class="lesson-caption">スライダーを動かすと、その時点へ移動して一時停止します。</p></div>
+              <div class="lesson-controls"><button type="button" class="learn-button" id="tutorial-play-8">再生</button><button type="button" class="learn-button" id="tutorial-reset-8">両方を最初から</button></div>
+              <p class="lesson-metrics" id="tutorial-animation-status-8"></p>
+              <h3>1か所にまとめる：4窓口・1本の列</h3><div class="tutorial-player"><canvas id="tutorial-pooling-pooled" style="display:block;width:100%;height:300px" role="img" aria-label="1か所にまとめる：4窓口・1本の列のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-pooling-pooled"><button type="button" id="tutorial-overlay-pooling-pooled-button" aria-label="08のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-pooling-status-pooled"></p>
+              <h3>2か所に分ける：場所A・2窓口</h3><div class="tutorial-player"><canvas id="tutorial-pooling-a" style="display:block;width:100%;height:300px" role="img" aria-label="2か所に分ける：場所A・2窓口のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-pooling-a"><button type="button" id="tutorial-overlay-pooling-a-button" aria-label="08のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-pooling-status-a"></p>
+              <h3>2か所に分ける：場所B・2窓口</h3><div class="tutorial-player"><canvas id="tutorial-pooling-b" style="display:block;width:100%;height:300px" role="img" aria-label="2か所に分ける：場所B・2窓口のアニメーション"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-pooling-b"><button type="button" id="tutorial-overlay-pooling-b-button" aria-label="08のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-pooling-status-b"></p>
+              <p id="tutorial-pooling-imbalance"></p>
+              <table class="learn-table"><caption>待ち時間の比較（対応開始済みの客の実測値）</caption><thead><tr><th scope="col">配置</th><th scope="col">平均待ち時間</th><th scope="col">待ち時間のばらつき<br>（標準偏差）</th></tr></thead><tbody><tr><th scope="row">1か所</th><td id="tutorial-pooling-mean-one">—</td><td id="tutorial-pooling-spread-one">—</td></tr><tr><th scope="row">2か所の合計</th><td id="tutorial-pooling-mean-two">—</td><td id="tutorial-pooling-spread-two">—</td></tr></tbody></table>
+              <p class="lesson-caption">標準偏差は、客ごとの待ち時間が平均からどれくらい散らばるかを示します。数字が大きいほど、待ち時間の差が大きいという意味です。2か所の実測平均は客数で重みづけして計算します。</p>
+              <p id="tutorial-pooling-theory"></p>
+              <p class="lesson-caption">基本タブと同じ人物・窓口表示。到着間隔とサービス時間はランダムで、平均サービス時間は2分。両配置には同じ時刻に同じ客が到着し、その客には同じサービス時間を与えます。初期停止・1秒で1分・60分で終了。短時間の結果には偶然の差があり、すべての時点で1か所の待ち時間やばらつきが小さいとは限りません。列の選び方や場所間の移動を認めると結果は変わります。</p>
+            </div>
+          </section>
           <p>理論の参考：<a href="https://web.mit.edu/dimitrib/www/Queueing_Data_Nets.pdf">Bertsekas &amp; Gallager, Data Networks — Queueing Theory</a>。本文と計算例はオフラインでも利用できます。</p>
           <button type="button" class="learn-button" data-open-tab="home">トップメニューへ戻る</button>
         </div>
@@ -1596,6 +1615,10 @@
           return count;
         }
 
+        serviceDuration(customer) {
+          return this.exponential(this.meanService);
+        }
+
         /** 空いている窓口に、行列の先頭から客を割り当てる。 */
         dispatch() {
           for (let i = 0; i < this.servers.length; i += 1) {
@@ -1606,7 +1629,7 @@
             this.waitN += 1;
             this.waitSum += wait;
             if (wait > this.waitMax) this.waitMax = wait;
-            const duration = this.exponential(this.meanService);
+            const duration = this.serviceDuration(customer);
             this.serviceSum += duration;
             this.servers[i] = {
               customer,
@@ -3865,8 +3888,83 @@
         }
       }
       const tutorialNetworks = [new TutorialNetwork("before", [60, 120, 120]), new TutorialNetwork("after", [120, 120, 50])];
-      const tutorialOverlayIds = {"4": ["tutorial-overlay-animation-4"], "5": ["tutorial-overlay-animation-5"], "6": ["tutorial-overlay-compare-2", "tutorial-overlay-compare-3"], "7": ["tutorial-overlay-network-before-0", "tutorial-overlay-network-before-1", "tutorial-overlay-network-before-2", "tutorial-overlay-network-after-0", "tutorial-overlay-network-after-1", "tutorial-overlay-network-after-2"]};
-      const tutorialAnimations = [4, 5, 6, 7].map(id => ({ id, time: 0, running: false }));
+      class TutorialPoolingStation extends Sim {
+        reset() {
+          super.reset();
+          this.waitSquareSum = 0;
+        }
+        serviceDuration(customer) {
+          const wait = this.clock - customer.arrived;
+          this.waitSquareSum += wait * wait;
+          return customer.serviceTime;
+        }
+      }
+      class TutorialPooling {
+        constructor() { this.reset(); }
+        reset() {
+          this.clock = 0; this.arrived = 0; this.imbalanceMinutes = 0;
+          this.arrivalRandom = makeRng(0x5eed1234);
+          this.serviceRandom = makeRng(0x1234abcd);
+          this.routeRandom = makeRng(0x087a021);
+          this.nextArrival = this.arrivalAfter(0);
+          this.items = [["pooled", 4, 90], ["a", 2, 45], ["b", 2, 45]].map(([key, servers, rate]) => {
+            const model = new TutorialPoolingStation({ arrivalsPerHour: 0, servicesPerHour: 30, servers, arrivalCv: 1 });
+            model.params.arrivalsPerHour = rate;
+            return { key, model, dots: new Map(), pulses: [] };
+          });
+        }
+        arrivalAfter(time) {
+          return time - 60 / 90 * Math.log(Math.max(this.arrivalRandom(), 1e-12));
+        }
+        imbalanced() {
+          const a = this.items[1].model, b = this.items[2].model;
+          return (a.queue.length > 0 && b.busyCount() < 2) || (b.queue.length > 0 && a.busyCount() < 2);
+        }
+        accrue(to) {
+          if (this.imbalanced()) this.imbalanceMinutes += to - this.clock;
+          for (const item of this.items) item.model.accrue(to);
+          this.clock = to;
+        }
+        advance(dt) {
+          if (!(dt > 0)) return;
+          const target = this.clock + dt;
+          for (;;) {
+            let at = this.nextArrival;
+            for (const item of this.items) at = Math.min(at, item.model.nextEventTime());
+            if (at > target) break;
+            this.accrue(at);
+            for (const { model } of this.items) {
+              for (let i = 0; i < model.servers.length; i++) {
+                if (model.servers[i] && model.servers[i].ends <= at) {
+                  model.servers[i] = null; model.served++;
+                }
+              }
+            }
+            if (this.nextArrival <= at) {
+              const customer = { id: ++this.arrived, arrived: at, serviceTime: -2 * Math.log(Math.max(this.serviceRandom(), 1e-12)) };
+              const route = this.routeRandom() < 0.5 ? 1 : 2;
+              for (const index of [0, route]) {
+                const model = this.items[index].model;
+                model.arrived++; model.queue.push({ ...customer });
+              }
+              this.nextArrival = this.arrivalAfter(at);
+            }
+            for (const item of this.items) item.model.dispatch();
+          }
+          this.accrue(target);
+        }
+        waitingStats(indices) {
+          let count = 0, sum = 0, squares = 0;
+          for (const index of indices) {
+            const model = this.items[index].model;
+            count += model.waitN; sum += model.waitSum; squares += model.waitSquareSum;
+          }
+          return count ? { count, mean: sum / count, spread: Math.sqrt(Math.max(0, squares / count - (sum / count) ** 2)) } : { count: 0, mean: 0, spread: 0 };
+        }
+      }
+      const tutorialPooling = new TutorialPooling();
+      const tutorialOverlayIds = {"4": ["tutorial-overlay-animation-4"], "5": ["tutorial-overlay-animation-5"], "6": ["tutorial-overlay-compare-2", "tutorial-overlay-compare-3"], "8": ["tutorial-overlay-pooling-pooled", "tutorial-overlay-pooling-a", "tutorial-overlay-pooling-b"], "7": ["tutorial-overlay-network-before-0", "tutorial-overlay-network-before-1", "tutorial-overlay-network-before-2", "tutorial-overlay-network-after-0", "tutorial-overlay-network-after-1", "tutorial-overlay-network-after-2"]};
+      const tutorialAnimations = [4, 5, 6, 7, 8].map(id => ({ id, time: 0, running: false }));
       function renderTutorialAnimation(a) {
         const time = a.time;
         let status = "";
@@ -3881,12 +3979,25 @@
             el("tutorial-compare-status-" + item.servers).textContent = `待ち ${q.queue.length}人 / 処理済み ${q.served}人 / 平均待ち ${q.stats().avgWait.toFixed(2)}分`;
           }
           status = `${time.toFixed(1)}分経過 / 両方とも到着 ${tutorialComparisons[0].model.arrived}人`;
-        } else {
+        } else if (a.id === 7) {
           for (const network of tutorialNetworks) {
             const queues = network.stages.map(item => item.model.queue.length);
             el("tutorial-network-status-" + network.key).textContent = `待ち：事前確認 ${queues[0]}人 / 主窓口 ${queues[1]}人 / 受け取り ${queues[2]}人 / 全工程を退出 ${network.exited}人`;
           }
           status = `${time.toFixed(1)}分経過 / 両方とも到着 ${tutorialNetworks[0].arrived}人`;
+        }
+        if (a.id === 8) {
+          for (const item of tutorialPooling.items) {
+            const q = item.model;
+            el("tutorial-pooling-status-" + item.key).textContent = `到着 ${q.arrived}人 / 待ち ${q.queue.length}人 / 空き窓口 ${q.servers.length - q.busyCount()} / 処理済み ${q.served}人`;
+          }
+          for (const [key, indices] of [["one", [0]], ["two", [1, 2]]]) {
+            const stats = tutorialPooling.waitingStats(indices);
+            el("tutorial-pooling-mean-" + key).textContent = stats.count ? stats.mean.toFixed(2) + " 分" : "—";
+            el("tutorial-pooling-spread-" + key).textContent = stats.count ? stats.spread.toFixed(2) + " 分" : "—";
+          }
+          el("tutorial-pooling-imbalance").textContent = (tutorialPooling.imbalanced() ? "いま、一方で客が待っているのに他方の窓口が空いています。" : "いまは、待ち客と他方の空き窓口の同時発生はありません。") + ` この偏りが起きた時間の合計：${tutorialPooling.imbalanceMinutes.toFixed(2)}分。`;
+          status = `${time.toFixed(1)}分経過 / どちらも合計 ${tutorialPooling.arrived}人が到着 / 全体のρ = 0.75`;
         }
         const rho = a.id === 4 ? 1.2 : a.id === 5 ? 0.75 : 0.5;
         if (a.id === 4 || a.id === 5) {
@@ -3910,6 +4021,7 @@
         if (a.id === 5) { resetTutorialVariation(); tutorialVariationQueue.advance(time); }
         if (a.id === 6) { resetTutorialComparisons(); for (const item of tutorialComparisons) item.model.advance(time); }
         if (a.id === 7) { for (const network of tutorialNetworks) { network.reset(); network.advance(time); } }
+        if (a.id === 8) { tutorialPooling.reset(); tutorialPooling.advance(time); }
         renderTutorialAnimation(a);
       }
       for (const a of tutorialAnimations) {
@@ -3927,6 +4039,7 @@
             if (a.id === 5) resetTutorialVariation();
             if (a.id === 6) resetTutorialComparisons();
             if (a.id === 7) for (const network of tutorialNetworks) network.reset();
+            if (a.id === 8) tutorialPooling.reset();
           }
           a.running = !a.running;
           renderTutorialAnimation(a);
@@ -3937,6 +4050,7 @@
           if (a.id === 5) resetTutorialVariation();
           if (a.id === 6) resetTutorialComparisons();
           if (a.id === 7) for (const network of tutorialNetworks) network.reset();
+          if (a.id === 8) tutorialPooling.reset();
           renderTutorialAnimation(a);
         });
         renderTutorialAnimation(a);
@@ -3948,6 +4062,9 @@
         resetTutorialVariation();
         renderTutorialAnimation(tutorialAnimations[1]);
       });
+      const pooledTheory = theoryOf({ arrivalsPerHour: 90, servicesPerHour: 30, servers: 4, arrivalCv: 1 });
+      const splitTheory = theoryOf({ arrivalsPerHour: 45, servicesPerHour: 30, servers: 2, arrivalCv: 1 });
+      el("tutorial-pooling-theory").textContent = `この条件で長く運用したときの理論上の平均待ち時間は、1か所なら約${pooledTheory.wq.toFixed(2)}分、2か所に分けると約${splitTheory.wq.toFixed(2)}分です。上の表は60分以内の実測値なので、理論値とは一致しません。`;
       updateTutorialLoad();
       updateTutorialCurve();
       let tutorialPaintAt = 0;
@@ -3972,9 +4089,12 @@
               } else if (a.id === 6) {
                 for (const item of tutorialComparisons) item.model.advance(Math.min(dt, 60 - a.time));
                 a.time = tutorialComparisons[0].model.clock;
-              } else {
+              } else if (a.id === 7) {
                 for (const network of tutorialNetworks) network.advance(Math.min(dt, 60 - a.time));
                 a.time = tutorialNetworks[0].clock;
+              } else if (a.id === 8) {
+                tutorialPooling.advance(Math.min(dt, 60 - a.time));
+                a.time = tutorialPooling.clock;
               }
             }
             if (a.time >= 60) { a.time = 60; a.running = false; }
@@ -3986,6 +4106,9 @@
           }
           for (const network of tutorialNetworks) {
             network.stages.forEach((item, i) => drawScene(tutorialAnimations[3].running ? dt : 0, item.model, el("tutorial-network-" + network.key + "-" + i), item.dots, item.pulses));
+          }
+          for (const item of tutorialPooling.items) {
+            drawScene(tutorialAnimations[4].running ? dt : 0, item.model, el("tutorial-pooling-" + item.key), item.dots, item.pulses);
           }
           if (now - tutorialPaintAt > 100) {
             tutorialPaintAt = now;
