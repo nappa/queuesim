@@ -1033,15 +1033,15 @@
           </section>
           <section class="lesson"><h2>06 / 目標利用率は、まず60〜80%から考える</h2>
             <p>経験的には、ρ = 0.6〜0.8 程度がほどよい目安です。<br>（※普遍的な基準はありません、到着時間・対応時間のばらつきが大きい場合にはρ=0.5もよいでしょう）</p>
-            <p>同じ客が来ても、窓口数が1つ変動するだけでρが大きく変わってしまうことがあります。<br>到着90人/時・1窓口30人/時を共通にして、同時に比較します。</p>
+            <p>同じ客が来ても、窓口数が1つ変動するだけでρが大きく変わってしまうことがあります。<br>到着100人/時・1窓口30人/時を共通にして、同時に比較します。</p>
             <div class="lesson-visual">
               <div class="tutorial-timeline"><label for="tutorial-time-6">経過時間：<output id="tutorial-time-value-6" for="tutorial-time-6">0.0 分 / 60分</output></label><input id="tutorial-time-6" type="range" min="0" max="60" step="0.1" value="0"><p class="lesson-caption">スライダーを動かすと、その時点へ移動して一時停止します。</p></div><div class="lesson-controls"><button type="button" class="learn-button" id="tutorial-play-6">再生</button><button type="button" class="learn-button" id="tutorial-reset-6">両方を最初から</button></div>
               <p class="lesson-metrics" id="tutorial-animation-status-6"></p>
-              <h3>3窓口 <span class="rho-badge" data-rho-state="unstable">ρ = 1.00：安定条件を満たさない</span></h3>
-              <div class="tutorial-player"><canvas id="tutorial-compare-3" style="display:block;width:100%;height:300px" role="img" aria-label="3窓口、利用率1.00の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-compare-3"><button type="button" id="tutorial-overlay-compare-3-button" aria-label="06のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-compare-status-3"></p>
-              <h3>4窓口 <span class="rho-badge" data-rho-state="calm">ρ = 0.75：能力に余裕</span></h3>
-              <div class="tutorial-player"><canvas id="tutorial-compare-4" style="display:block;width:100%;height:300px" role="img" aria-label="4窓口、利用率0.75の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-compare-4"><button type="button" id="tutorial-overlay-compare-4-button" aria-label="06のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-compare-status-4"></p>
-              <p>3窓口ではばらつきを吸収する余裕がありません。4窓口では余力で行列を解消できます。短い時間では列が増減するため、常に一方の列が長いとは限りません。</p>
+              <h3>3窓口 <span class="rho-badge" data-rho-state="unstable">ρ ≈ 1.11：処理能力を超過</span></h3>
+              <div class="tutorial-player"><canvas id="tutorial-compare-3" style="display:block;width:100%;height:300px" role="img" aria-label="3窓口、利用率約1.11の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-compare-3"><button type="button" id="tutorial-overlay-compare-3-button" aria-label="06のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-compare-status-3"></p>
+              <h3>4窓口 <span class="rho-badge" data-rho-state="tight">ρ ≈ 0.83：余裕が小さい</span></h3>
+              <div class="tutorial-player"><canvas id="tutorial-compare-4" style="display:block;width:100%;height:300px" role="img" aria-label="4窓口、利用率約0.83の待ち行列"></canvas><div class="tutorial-play-overlay" id="tutorial-overlay-compare-4"><button type="button" id="tutorial-overlay-compare-4-button" aria-label="06のアニメーションを再生">▶ 再生</button></div></div><p id="tutorial-compare-status-4"></p>
+              <p>3窓口では到着数が処理能力90人/時を超え、行列が伸び続けます。4窓口は処理能力120人/時で、余力で行列を解消できます。短い時間では列が増減するため、常に一方の列が長いとは限りません。</p>
               <p class="lesson-caption">基本タブと同じモデル・描画。両方に同じ到着時刻と、客の順番ごとに同じサービス時間を与えます。到着はポアソン過程、サービス時間は平均2分の指数分布です。1秒で1分進み、60分で停止します。リセットすると同じ条件を再現します。平均待ち時間は対応開始済みの客についての実測値で、有限時間の結果です。</p>
             </div>
             <p><strong>窓口を増やすほど待ち時間は減りますが、追加費用もかかります。</strong>仮に1窓口2,000円/時なら、3窓口は6,000円/時、4窓口は8,000円/時です。さらに増やすべきかは、待ち時間短縮の価値と追加費用、サービス目標で判断します。</p></section>
@@ -3808,7 +3808,7 @@
       }
       const tutorialComparisons = [3, 4].map(servers => ({
         servers,
-        model: new TutorialComparisonSim({ arrivalsPerHour: 90, servicesPerHour: 30, servers, arrivalCv: 1 }),
+        model: new TutorialComparisonSim({ arrivalsPerHour: 100, servicesPerHour: 30, servers, arrivalCv: 1 }),
         dots: new Map(), pulses: [],
       }));
       function resetTutorialComparisons() {
