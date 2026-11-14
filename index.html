@@ -1,0 +1,3591 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>待ち行列シミュレーター</title>
+    <style>
+      /* 計測器のような落ち着いた配色。左に操作パネル、右にアニメーションと指標。 */
+      :root {
+        --bg: #e9edf0;
+        --surface: #ffffff;
+        --surface-2: #f2f6f8;
+        --line: #c8d2d9;
+        --line-soft: #dde5ea;
+        --fg: #16222b;
+        --muted: #5b6e7a;
+        --accent: #0d7d80;
+        --accent-soft: #d6eaea;
+        --warn: #b06a1b;
+        --crit: #a52f3a;
+        --ok: #2f7d4f;
+        --shadow: 0 1px 2px rgba(22, 34, 43, 0.08), 0 8px 24px rgba(22, 34, 43, 0.06);
+
+        --font-ui: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN",
+          "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", "Segoe UI", sans-serif;
+        --font-num: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+
+        color-scheme: light;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #0e1418;
+          --surface: #161e24;
+          --surface-2: #1c262d;
+          --line: #2b3842;
+          --line-soft: #222d35;
+          --fg: #e6eef2;
+          --muted: #8ea3ae;
+          --accent: #3fb6b2;
+          --accent-soft: #15302f;
+          --warn: #dda05a;
+          --crit: #e2707a;
+          --ok: #5bbd84;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.35);
+          color-scheme: dark;
+        }
+      }
+
+      :root[data-theme="dark"] {
+        --bg: #0e1418;
+        --surface: #161e24;
+        --surface-2: #1c262d;
+        --line: #2b3842;
+        --line-soft: #222d35;
+        --fg: #e6eef2;
+        --muted: #8ea3ae;
+        --accent: #3fb6b2;
+        --accent-soft: #15302f;
+        --warn: #dda05a;
+        --crit: #e2707a;
+        --ok: #5bbd84;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.35);
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        line-height: 1.5;
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .shell {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 2px;
+        padding: 10px 14px 0;
+      }
+
+      .tab {
+        flex: 0 0 auto;
+        padding: 8px 16px;
+        font-family: inherit;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--muted);
+        background: transparent;
+        border: 1px solid transparent;
+        border-bottom: none;
+        border-radius: 9px 9px 0 0;
+        cursor: pointer;
+      }
+
+      .tab:hover {
+        color: var(--fg);
+        border-color: transparent;
+      }
+
+      .tab[aria-selected="true"] {
+        color: var(--fg);
+        background: var(--surface);
+        border-color: var(--line);
+      }
+
+      .tab:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 14px;
+        min-height: 0;
+        flex: 1;
+        padding: 10px 14px 14px;
+      }
+
+      /* ---------- 設定のまとまり ---------- */
+
+      .group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px 11px;
+        background: var(--surface-2);
+        border: 1px solid var(--line-soft);
+        border-radius: 10px;
+      }
+
+      .group-head {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 11.5px;
+        color: var(--fg);
+        cursor: pointer;
+      }
+
+      .check input {
+        width: 15px;
+        height: 15px;
+        margin: 0;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
+
+      /* ---------- 時間帯ごとの設定 ---------- */
+
+      .schedule {
+        padding: 10px 12px 11px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      .sched-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .sched-head h2 {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .sched-head span {
+        font-size: 10.5px;
+        color: var(--muted);
+      }
+
+      .sched-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .sched-col {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+        padding: 7px 8px 8px;
+        background: var(--surface-2);
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+      }
+
+      .sched-col[data-open="false"] {
+        background: transparent;
+        border-style: dashed;
+      }
+
+      .sched-hour {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 650;
+        color: var(--fg);
+      }
+
+      .sched-hour em {
+        font-size: 9px;
+        font-style: normal;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .sched-field {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: baseline;
+        gap: 0 6px;
+      }
+
+      .sched-field > span {
+        font-size: 9.5px;
+        color: var(--muted);
+      }
+
+      .sched-field output {
+        font-family: var(--font-num);
+        font-size: 12px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--accent);
+        text-align: right;
+      }
+
+      .sched-field input[type="range"] {
+        grid-column: 1 / -1;
+        margin-top: 1px;
+      }
+
+      .sched-field.closed {
+        font-size: 9.5px;
+        color: var(--muted);
+      }
+
+      .stage-day {
+        grid-template-rows: minmax(190px, 1fr) auto auto;
+      }
+
+      .swatch-step {
+        border-top-color: var(--muted);
+        border-top-width: 2px;
+      }
+
+      /* ---------- 操作パネル ---------- */
+
+      .panel {
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+        min-width: 0;
+        padding: 16px;
+        overflow-y: auto;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+
+      .panel-head h1 {
+        margin: 0;
+        font-size: 16.5px;
+        font-weight: 650;
+        letter-spacing: 0.01em;
+        text-wrap: balance;
+      }
+
+      .panel-head .sub {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+
+      .control label {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .control-name {
+        font-size: 12px;
+        font-weight: 550;
+        color: var(--fg);
+      }
+
+      .control-value {
+        font-family: var(--font-num);
+        font-size: 19px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--accent);
+        white-space: nowrap;
+      }
+
+      .control-value i {
+        margin-left: 2px;
+        font-size: 10.5px;
+        font-style: normal;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .derived {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 11.5px;
+      }
+
+      .derived b {
+        font-family: var(--font-num);
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--fg);
+      }
+
+      input[type="range"] {
+        width: 100%;
+        margin: 8px 0 0;
+        appearance: none;
+        -webkit-appearance: none;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 4px;
+        background: var(--line);
+        border-radius: 2px;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        width: 18px;
+        height: 18px;
+        margin-top: -7px;
+        appearance: none;
+        -webkit-appearance: none;
+        background: var(--surface);
+        border: 2px solid var(--accent);
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      input[type="range"]::-moz-range-track {
+        height: 4px;
+        background: var(--line);
+        border-radius: 2px;
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 15px;
+        height: 15px;
+        background: var(--surface);
+        border: 2px solid var(--accent);
+        border-radius: 50%;
+      }
+
+      input[type="range"]:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 4px;
+        border-radius: 4px;
+      }
+
+      .scale {
+        position: relative;
+        height: 13px;
+        margin: 3px 0 0;
+        font-size: 9.5px;
+        color: var(--muted);
+      }
+
+      .scale span {
+        position: absolute;
+        top: 0;
+        white-space: nowrap;
+      }
+
+      .scale .s-left {
+        left: 0;
+      }
+
+      .scale .s-mid {
+        left: 33.3%;
+        transform: translateX(-50%);
+      }
+
+      .scale .s-right {
+        right: 0;
+      }
+
+      /* ---------- 利用率 ---------- */
+
+      .rho {
+        padding: 12px;
+        background: var(--surface-2);
+        border: 1px solid var(--line-soft);
+        border-radius: 10px;
+      }
+
+      .rho-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+
+      .rho-head b {
+        font-family: var(--font-num);
+        font-size: 17px;
+        font-variant-numeric: tabular-nums;
+        color: var(--fg);
+      }
+
+      .rho-track {
+        position: relative;
+        height: 7px;
+        margin: 8px 0 0;
+        overflow: hidden;
+        background: var(--line);
+        border-radius: 4px;
+      }
+
+      .rho-fill {
+        height: 100%;
+        width: 0;
+        background: var(--accent);
+        border-radius: 4px;
+        transition: width 140ms linear, background-color 220ms ease;
+      }
+
+      .rho-limit {
+        position: absolute;
+        top: -2px;
+        bottom: -2px;
+        left: 83.333%;
+        width: 1px;
+        background: var(--fg);
+        opacity: 0.45;
+      }
+
+      .rho-note {
+        margin: 8px 0 0;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .rho[data-state="unstable"] {
+        background: color-mix(in srgb, var(--crit) 12%, var(--surface-2));
+        border-color: color-mix(in srgb, var(--crit) 40%, var(--line-soft));
+      }
+
+      .rho[data-state="unstable"] .rho-note {
+        color: var(--crit);
+        font-weight: 600;
+      }
+
+      .rho[data-state="tight"] .rho-note {
+        color: var(--warn);
+      }
+
+      /* ---------- 理論値 ---------- */
+
+      .theory {
+        padding: 12px;
+        background: var(--surface-2);
+        border: 1px solid var(--line-soft);
+        border-radius: 10px;
+      }
+
+      .theory-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0 0 9px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--fg);
+      }
+
+      .theory-head span {
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .theory-grid {
+        display: grid;
+        gap: 4px;
+        margin: 0;
+      }
+
+      .theory-grid > div {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .theory-grid dt {
+        font-size: 11.5px;
+        color: var(--muted);
+      }
+
+      .theory-grid dd {
+        margin: 0;
+        font-family: var(--font-num);
+        font-size: 14px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--fg);
+        white-space: nowrap;
+      }
+
+      .theory-grid dd i {
+        margin-left: 2px;
+        font-size: 10px;
+        font-style: normal;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .theory-grid .span-note {
+        display: block;
+        margin: -2px 0 2px;
+      }
+
+      .theory-grid .span-note dt {
+        font-size: 9.5px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+
+      .theory-grid .headline dt {
+        color: var(--fg);
+        font-weight: 550;
+      }
+
+      .theory-grid .headline dd {
+        font-size: 17px;
+        color: var(--accent);
+      }
+
+      .theory-note {
+        margin: 9px 0 0;
+        padding-top: 8px;
+        font-family: var(--font-num);
+        font-size: 9.5px;
+        line-height: 1.7;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+      }
+
+      .theory[data-state="unstable"] .theory-grid dd,
+      .theory[data-state="unstable"] .theory-grid .headline dd {
+        color: var(--crit);
+      }
+
+      .theory[data-state="unstable"] .theory-note {
+        color: var(--crit);
+      }
+
+      /* ---------- ボタン ---------- */
+
+      .buttons {
+        display: flex;
+        gap: 8px;
+      }
+
+      button {
+        flex: 1;
+        padding: 9px 10px;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--fg);
+        background: var(--surface-2);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        border-color: var(--accent);
+      }
+
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      button.primary {
+        color: #fff;
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+
+      :root[data-theme="dark"] button.primary {
+        color: #06201f;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) button.primary {
+          color: #06201f;
+        }
+      }
+
+      .hint {
+        margin: 0;
+        font-size: 10.5px;
+        color: var(--muted);
+      }
+
+      .panel-foot {
+        margin-top: auto;
+        padding-top: 10px;
+        border-top: 1px solid var(--line-soft);
+      }
+
+      .panel-foot p {
+        margin: 0;
+        font-size: 10.5px;
+        color: var(--muted);
+      }
+
+      /* ---------- 右側 ---------- */
+
+      .stage {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto auto;
+        gap: 12px;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      .scene-wrap {
+        position: relative;
+        min-height: 0;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      #scene,
+      #d-scene {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .scene-clock {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        text-align: right;
+        pointer-events: none;
+      }
+
+      .scene-clock span {
+        display: block;
+        font-family: var(--font-num);
+        font-size: 15px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--fg);
+      }
+
+      .scene-clock i {
+        font-size: 10px;
+        font-style: normal;
+        color: var(--muted);
+      }
+
+      /* ---------- 指標タイル ---------- */
+
+      .readouts {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .tile {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        padding: 10px 12px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .tile-label {
+        font-size: 10.5px;
+        letter-spacing: 0.02em;
+        color: var(--muted);
+      }
+
+      .tile-value {
+        font-family: var(--font-num);
+        font-size: 22px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.15;
+      }
+
+      .tile-value i {
+        margin-left: 2px;
+        font-size: 11px;
+        font-style: normal;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .tile-sub {
+        font-size: 10.5px;
+        color: var(--muted);
+      }
+
+      .tile-sub b {
+        font-family: var(--font-num);
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--fg);
+      }
+
+      .tile[data-tone="warn"] .tile-value {
+        color: var(--warn);
+      }
+
+      .tile[data-tone="crit"] .tile-value {
+        color: var(--crit);
+      }
+
+      /* ---------- グラフ ---------- */
+
+      .chart-wrap {
+        padding: 10px 12px 6px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      .chart-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .chart-head h2 {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--fg);
+      }
+
+      .legend {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 10.5px;
+        color: var(--muted);
+      }
+
+      .swatch {
+        display: inline-block;
+        width: 16px;
+        height: 0;
+        margin-right: 4px;
+        vertical-align: middle;
+        border-top: 2px solid var(--accent);
+      }
+
+      .swatch-dash {
+        border-top-style: dashed;
+        border-top-color: var(--muted);
+      }
+
+      #chart {
+        display: block;
+        width: 100%;
+        height: 104px;
+      }
+
+      #d-chart {
+        display: block;
+        width: 100%;
+        height: 128px;
+      }
+
+      @media (max-width: 1080px) {
+        .readouts {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 860px) {
+        body {
+          overflow: auto;
+        }
+
+        .app {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto minmax(0, 1fr);
+          height: auto;
+          min-height: 100%;
+        }
+
+        .panel {
+          overflow: visible;
+        }
+
+        .stage {
+          min-height: 560px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .rho-fill {
+          transition: none;
+        }
+      }
+
+      .tabs { overflow-x: auto; }
+      #b-scene { width: 100%; height: 100%; display: block; }
+      #b-chart { width: 100%; height: 120px; display: block; }
+      .stage-bottleneck { grid-template-rows: minmax(260px, 1fr) auto auto; }
+      .b-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+      .b-presets button, .b-actions button { padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); cursor: pointer; }
+      .b-actions { display: flex; gap: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <nav class="tabs" role="tablist" aria-label="シミュレーション">
+        <button
+          type="button"
+          class="tab"
+          id="tab-steady"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-steady"
+        >
+          基本（定常状態）
+        </button>
+        <button
+          type="button"
+          class="tab"
+          id="tab-day"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-day"
+        >
+          開店日シミュレーション
+        </button>
+        <button type="button" class="tab" id="tab-bottleneck" role="tab" aria-selected="false" aria-controls="panel-bottleneck">行列ボトルネック</button>
+      </nav>
+
+      <div class="app" id="panel-steady" role="tabpanel" aria-labelledby="tab-steady">
+      <aside class="panel">
+        <header class="panel-head">
+          <h1>待ち行列シミュレーター</h1>
+          <p class="sub">サービス時間は指数分布。到着のバラツキは Ca で変えられる</p>
+        </header>
+
+        <div class="control">
+          <label for="arrivals">
+            <span class="control-name">1時間あたりの到着数</span>
+            <output id="arrivals-out" class="control-value">60<i>人/時</i></output>
+          </label>
+          <input id="arrivals" type="range" min="0" max="240" step="1" value="60" />
+          <p class="derived">平均到着間隔 <b id="mean-ia">1.00</b> 分</p>
+        </div>
+
+        <div class="control">
+          <label for="burst">
+            <span class="control-name">到着のバラツキ</span>
+            <output id="burst-out" class="control-value">1.0<i>Ca</i></output>
+          </label>
+          <input id="burst" type="range" min="0" max="3" step="0.1" value="1" />
+          <div class="scale">
+            <span class="s-left">一定</span>
+            <span class="s-mid">ポアソン</span>
+            <span class="s-right">バースト</span>
+          </div>
+          <p class="derived" id="burst-note">ポアソン到着（完全にランダム）</p>
+        </div>
+
+        <div class="control">
+          <label for="services">
+            <span class="control-name">1窓口1時間あたりのサービス数</span>
+            <output id="services-out" class="control-value">30<i>人/時</i></output>
+          </label>
+          <input id="services" type="range" min="1" max="240" step="1" value="30" />
+          <p class="derived">平均サービス時間 <b id="mean-svc">2.00</b> 分</p>
+        </div>
+
+        <div class="control">
+          <label for="servers">
+            <span class="control-name">窓口数</span>
+            <output id="servers-out" class="control-value">3<i>窓口</i></output>
+          </label>
+          <input id="servers" type="range" min="1" max="12" step="1" value="3" />
+          <p class="derived">処理能力 <b id="capacity">90</b> 人/時</p>
+        </div>
+
+        <div class="control">
+          <label for="speed">
+            <span class="control-name">再生速度</span>
+            <output id="speed-out" class="control-value">1.0<i>分/秒</i></output>
+          </label>
+          <input id="speed" type="range" min="0.25" max="20" step="0.25" value="1" />
+        </div>
+
+        <div class="buttons">
+          <button id="toggle" type="button" class="primary">一時停止</button>
+          <button id="reset" type="button">リセット</button>
+        </div>
+        <p class="hint">リセットすると行列・窓口・統計・グラフをすべて空にします（Space で停止、R でリセット）。</p>
+
+        <div class="rho">
+          <div class="rho-head">
+            <span>利用率 &rho; = &lambda; / (c&mu;)</span>
+            <b id="rho-value">0.67</b>
+          </div>
+          <div class="rho-track" role="img" aria-label="利用率">
+            <div class="rho-fill" id="rho-fill"></div>
+            <div class="rho-limit"></div>
+          </div>
+          <p class="rho-note" id="rho-note">&rho; &lt; 1 なら行列は一定の長さで落ち着きます。</p>
+        </div>
+
+        <div class="theory" id="theory">
+          <h2 class="theory-head">
+            理論値<span id="t-model">M/M/c の定常状態</span>
+          </h2>
+          <dl class="theory-grid">
+            <div class="headline">
+              <dt>平均待ち時間 Wq</dt>
+              <dd id="t-wq">0.89<i>分</i></dd>
+            </div>
+            <div class="headline">
+              <dt>平均待ち人数 Lq</dt>
+              <dd id="t-lq">0.89<i>人</i></dd>
+            </div>
+            <div>
+              <dt>バラツキ補正</dt>
+              <dd id="t-factor">×1.00</dd>
+            </div>
+            <div>
+              <dt>平均滞在時間 W</dt>
+              <dd id="t-w">2.89<i>分</i></dd>
+            </div>
+            <div>
+              <dt>平均系内人数 L</dt>
+              <dd id="t-l">2.89<i>人</i></dd>
+            </div>
+            <div>
+              <dt>待たされる確率</dt>
+              <dd id="t-pw">44.4<i>%</i></dd>
+            </div>
+            <div>
+              <dt>提供トラフィック a</dt>
+              <dd id="t-a">2.00<i>アーラン</i></dd>
+            </div>
+          </dl>
+          <p class="theory-note" id="t-note"></p>
+        </div>
+
+        <footer class="panel-foot">
+          <p>スライダーを動かしても行列と統計はそのまま続きます。新しい条件での変化を、そのまま追えます。</p>
+        </footer>
+      </aside>
+
+      <main class="stage">
+        <section class="scene-wrap">
+          <canvas id="scene" aria-label="待ち行列のアニメーション"></canvas>
+          <div class="scene-clock">
+            <span id="clock">0:00:00</span>
+            <i>経過（シミュレーション時間）</i>
+          </div>
+        </section>
+
+        <section class="readouts">
+          <div class="tile">
+            <span class="tile-label">いま待っている人</span>
+            <span class="tile-value" id="now-queue">0<i>人</i></span>
+            <span class="tile-sub">サービス中 <b id="now-busy">0 / 3</b></span>
+          </div>
+          <div class="tile">
+            <span class="tile-label">平均待ち時間 Wq</span>
+            <span class="tile-value" id="avg-wait">0.0<i>分</i></span>
+            <span class="tile-sub">理論値 <b id="th-wait">0.0</b> 分</span>
+          </div>
+          <div class="tile">
+            <span class="tile-label">平均待ち人数 Lq</span>
+            <span class="tile-value" id="avg-queue">0.0<i>人</i></span>
+            <span class="tile-sub">理論値 <b id="th-queue">0.0</b> 人</span>
+          </div>
+          <div class="tile">
+            <span class="tile-label">窓口稼働率</span>
+            <span class="tile-value" id="util">0<i>%</i></span>
+            <span class="tile-sub">待たされる確率 <b id="th-pwait">0</b>%</span>
+          </div>
+          <div class="tile">
+            <span class="tile-label">最長の待ち時間</span>
+            <span class="tile-value" id="max-wait">0.0<i>分</i></span>
+            <span class="tile-sub">処理済み <b id="served">0</b> 人</span>
+          </div>
+        </section>
+
+        <section class="chart-wrap">
+          <div class="chart-head">
+            <h2>待ち人数の推移</h2>
+            <span class="legend">
+              <i class="swatch swatch-line"></i>実測
+              <i class="swatch swatch-dash"></i>理論値 Lq
+            </span>
+          </div>
+          <canvas id="chart" aria-label="待ち人数の推移グラフ"></canvas>
+        </section>
+      </main>
+      </div>
+
+      <div
+        class="app"
+        id="panel-day"
+        role="tabpanel"
+        aria-labelledby="tab-day"
+        hidden
+      >
+        <aside class="panel">
+          <header class="panel-head">
+            <h1>開店日シミュレーション</h1>
+            <p class="sub">12:00 一斉オープン · 16:00 受付終了</p>
+          </header>
+
+          <div class="group">
+            <h2 class="group-head">開店前の先行受付</h2>
+            <div class="control">
+              <label for="d-staff">
+                <span class="control-name">先行受付の係員数</span>
+                <output id="d-staff-out" class="control-value">3<i>人</i></output>
+              </label>
+              <input id="d-staff" type="range" min="0" max="6" step="1" value="3" />
+              <p class="derived">
+                処理能力 <b id="d-staff-cap">120</b> 人/時
+              </p>
+            </div>
+            <div class="control">
+              <label for="d-pre">
+                <span class="control-name">先行受付1件の時間</span>
+                <output id="d-pre-out" class="control-value">1.5<i>分</i></output>
+              </label>
+              <input id="d-pre" type="range" min="0.3" max="8" step="0.1" value="1.5" />
+            </div>
+            <label class="check">
+              <input id="d-after" type="checkbox" checked />
+              <span>開店後も行列で受付を続ける</span>
+            </label>
+          </div>
+
+          <div class="group">
+            <h2 class="group-head">窓口のサービス時間</h2>
+            <div class="control">
+              <label for="d-normal">
+                <span class="control-name">受付していない客</span>
+                <output id="d-normal-out" class="control-value">4.0<i>分</i></output>
+              </label>
+              <input id="d-normal" type="range" min="0.5" max="15" step="0.5" value="4" />
+            </div>
+            <div class="control">
+              <label for="d-short">
+                <span class="control-name">先行受付済みの客</span>
+                <output id="d-short-out" class="control-value">1.0<i>分</i></output>
+              </label>
+              <input id="d-short" type="range" min="0.1" max="8" step="0.1" value="1" />
+              <p class="derived">
+                先行受付で窓口は <b id="d-gain">4.0</b> 倍速く流れる
+              </p>
+            </div>
+          </div>
+
+          <div class="control">
+            <label for="d-speed">
+              <span class="control-name">再生速度</span>
+              <output id="d-speed-out" class="control-value">5.0<i>分/秒</i></output>
+            </label>
+            <input id="d-speed" type="range" min="0.5" max="60" step="0.5" value="5" />
+          </div>
+
+          <div class="buttons">
+            <button id="d-toggle" type="button" class="primary">一時停止</button>
+            <button id="d-reset" type="button">最初から</button>
+          </div>
+
+          <div class="theory" id="d-result">
+            <h2 class="theory-head">当日の結果<span id="d-phase">開店前</span></h2>
+            <dl class="theory-grid">
+              <div class="headline">
+                <dt>最大待ち人数</dt>
+                <dd id="d-maxq">0<i>人</i></dd>
+              </div>
+              <div class="headline">
+                <dt>最長の待ち時間</dt>
+                <dd id="d-maxw">0.0<i>分</i></dd>
+              </div>
+              <div class="span-note">
+                <dt>開店前から並んだ人は、開店を待つぶんが入ります</dt>
+              </div>
+              <div>
+                <dt>平均待ち時間（全体）</dt>
+                <dd id="d-avgw">0.0<i>分</i></dd>
+              </div>
+              <div>
+                <dt>うち開店後に来た客</dt>
+                <dd id="d-avgwp">0.0<i>分</i></dd>
+              </div>
+              <div>
+                <dt>先行受付で来た人</dt>
+                <dd id="d-prerate">0<i>%</i></dd>
+              </div>
+              <div>
+                <dt>到着 / 処理済み</dt>
+                <dd id="d-counts">0 / 0</dd>
+              </div>
+              <div>
+                <dt>全員さばけた時刻</dt>
+                <dd id="d-finish">—</dd>
+              </div>
+            </dl>
+            <p class="theory-note" id="d-note"></p>
+          </div>
+
+          <footer class="panel-foot">
+            <p>
+              16:00 で到着は止まり、残った客をさばき終わるまで窓口は開け続けます。
+            </p>
+          </footer>
+        </aside>
+
+        <main class="stage stage-day">
+          <section class="scene-wrap">
+            <canvas id="d-scene" aria-label="開店日のアニメーション"></canvas>
+            <div class="scene-clock">
+              <span id="d-clock">10:00</span>
+              <i id="d-clock-sub">開店まで 120 分</i>
+            </div>
+          </section>
+
+          <section class="schedule">
+            <div class="sched-head">
+              <h2>時間帯ごとの到着数と窓口数</h2>
+              <span id="d-total">合計 560 人が来店する想定</span>
+            </div>
+            <div class="sched-grid" id="d-sched"></div>
+          </section>
+
+          <section class="chart-wrap">
+            <div class="chart-head">
+              <h2>待ち人数と窓口数の推移</h2>
+              <span class="legend">
+                <i class="swatch swatch-line"></i>待ち人数
+                <i class="swatch swatch-step"></i>窓口数
+              </span>
+            </div>
+            <canvas id="d-chart" aria-label="当日の推移グラフ"></canvas>
+          </section>
+        </main>
+      </div>
+
+      <div class="app" id="panel-bottleneck" role="tabpanel" aria-labelledby="tab-bottleneck" hidden>
+        <aside class="panel">
+          <header class="panel-head"><h1>行列ボトルネック</h1><p class="sub">遅い歩行者と狭い通路が、後ろの流れをどう変える？</p></header>
+          <div class="group"><div class="group-head">同じ乱数で条件を比較</div><div class="b-presets">
+            <button type="button" data-b-preset="clear">通常歩行</button><button type="button" data-b-preset="phone">スマホ歩行</button><button type="button" data-b-preset="neck">狭窄のみ</button><button type="button" data-b-preset="both">両方</button>
+          </div></div>
+          <div class="control"><label for="b-arrival"><span class="control-name">到着人数</span><output class="control-value" id="b-arrival-out"></output></label><input type="range" id="b-arrival" min="0" max="180" step="5" value="140" data-unit="人/分"></div>
+          <div class="control"><label for="b-phone"><span class="control-name">スマホを見ながら歩く人</span><output class="control-value" id="b-phone-out"></output></label><input type="range" id="b-phone" min="0" max="100" step="5" value="30" data-unit="%"></div>
+          <div class="control"><label for="b-walk"><span class="control-name">通常の歩行速度</span><output class="control-value" id="b-walk-out"></output></label><input type="range" id="b-walk" min="0.6" max="1.8" step="0.1" value="1.2" data-unit="m/秒"></div>
+          <div class="control"><label for="b-slow"><span class="control-name">スマホ歩行の速度</span><output class="control-value" id="b-slow-out"></output></label><input type="range" id="b-slow" min="0.1" max="1.2" step="0.1" value="0.4" data-unit="m/秒"></div>
+          <div class="control"><label for="b-width"><span class="control-name">通路の幅</span><output class="control-value" id="b-width-out"></output></label><input type="range" id="b-width" min="1" max="4" step="1" value="3" data-unit="列"></div>
+          <div class="control"><label for="b-neck"><span class="control-name">狭窄部の幅</span><output class="control-value" id="b-neck-out"></output></label><input type="range" id="b-neck" min="1" max="4" step="1" value="1" data-unit="列"></div>
+          <div class="control"><label for="b-speed"><span class="control-name">再生速度</span><output class="control-value" id="b-speed-out"></output></label><input type="range" id="b-speed" min="1" max="20" step="1" value="4" data-unit="倍"></div>
+          <label class="check"><input type="checkbox" id="b-pass" checked>空いていれば追い越す</label>
+          <div class="b-actions"><button type="button" id="b-toggle">一時停止</button><button type="button" id="b-reset">同じ条件でリセット</button></div>
+          <p class="theory-note">条件を変えると最初から再計算します（再生速度を除く）。狭窄部の幅は通路幅以下になります。</p>
+          <footer class="panel-foot"><p>1マス0.6m、長さ36mの簡易歩行モデル。スマホ歩行者は遅く歩き、ときどき1〜3秒立ち止まります。実測に基づく混雑・避難予測ではありません。</p></footer>
+        </aside>
+        <main class="stage stage-bottleneck">
+          <section class="scene-wrap"><canvas id="b-scene" aria-label="通路の俯瞰図。左から右に歩行し、中央の狭窄部で合流します"></canvas><div class="scene-clock"><span id="b-clock">0:00</span><i>経過時間</i></div></section>
+          <section class="readouts">
+<div class="tile"><span class="tile-label">通路内</span><span class="tile-value" id="b-inside">0</span><span class="tile-sub">人</span></div><div class="tile"><span class="tile-label">入口の待機</span><span class="tile-value" id="b-outside">0</span><span class="tile-sub">人</span></div><div class="tile"><span class="tile-label">通過済み</span><span class="tile-value" id="b-out">0</span><span class="tile-sub">人</span></div><div class="tile"><span class="tile-label">平均通過時間</span><span class="tile-value" id="b-travel">0</span><span class="tile-sub">秒</span></div><div class="tile"><span class="tile-label">直近1分の流出</span><span class="tile-value" id="b-flow">0</span><span class="tile-sub">人/分</span></div>          </section>
+          <section class="chart-wrap"><div class="chart-head"><h2>滞留人数の推移（入口待機を含む）</h2><span class="legend">直近5分</span></div><canvas id="b-chart" aria-label="滞留人数の時系列"></canvas><p class="theory-note">青緑：通常歩行　紫：スマホ歩行　赤い輪：前方が詰まっている人。平均通過時間は入口待機を含み、退出済みの人で集計。</p><p class="theory-note" id="b-status" role="status"></p></section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      "use strict";
+
+      // =====================================================================
+      // M/M/c 待ち行列の離散事象シミュレーション
+      //
+      // λ = 1時間あたりの到着数     → 平均到着間隔 60/λ 分
+      // μ = 1窓口1時間あたりのサービス数 → 平均サービス時間 60/μ 分
+      // c = 窓口数
+      // 到着間隔もサービス時間も指数分布。つまり到着はポアソン過程。
+      // 内部の時間単位はすべて「分」。
+      // =====================================================================
+
+      /** 行列の履歴サンプリング間隔（シミュレーション分）。 */
+      const HIST_DT = 0.5;
+      /** 履歴として持つ点数（= 90 シミュレーション分）。 */
+      const HIST_LEN = 180;
+      /** 行列が発散したときにメモリを守るための上限。 */
+      const QUEUE_HARD_CAP = 50000;
+      /** 1フレームで処理する事象数の上限（暴走防止）。 */
+      const MAX_EVENTS_PER_STEP = 200000;
+
+      /** 小さな疑似乱数生成器（mulberry32）。 */
+      function makeRng(seed) {
+        let a = seed >>> 0;
+        return function random() {
+          a = (a + 0x6d2b79f5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      /** 先頭の取り出しが O(1) の待ち行列。 */
+      class Queue {
+        constructor() {
+          this.items = [];
+          this.head = 0;
+        }
+        get length() {
+          return this.items.length - this.head;
+        }
+        at(index) {
+          return this.items[this.head + index];
+        }
+        push(value) {
+          this.items.push(value);
+        }
+        shift() {
+          const value = this.items[this.head];
+          this.items[this.head] = undefined;
+          this.head += 1;
+          if (this.head > 64 && this.head * 2 > this.items.length) {
+            this.items = this.items.slice(this.head);
+            this.head = 0;
+          }
+          return value;
+        }
+        unshift(value) {
+          if (this.head > 0) {
+            this.head -= 1;
+            this.items[this.head] = value;
+          } else {
+            this.items.unshift(value);
+          }
+        }
+        clear() {
+          this.items = [];
+          this.head = 0;
+        }
+      }
+
+      const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
+
+      class Sim {
+        constructor(params) {
+          // arrivalCv を省いたら Ca=1（ポアソン到着）。
+          this.params = { arrivalCv: 1, ...params };
+          this.random = makeRng(0x5eed1234);
+          this.servers = [];
+          this.queue = new Queue();
+          this.reset();
+        }
+
+        /** 平均 mean の指数分布。mean が無限なら無限を返す。 */
+        exponential(mean) {
+          if (!Number.isFinite(mean) || mean <= 0) return Infinity;
+          return -mean * Math.log(Math.max(this.random(), 1e-12));
+        }
+
+        /** 標準正規乱数 (Box–Muller)。 */
+        normal() {
+          const u = Math.max(this.random(), 1e-12);
+          const v = this.random();
+          return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        }
+
+        /** 形状 shape・尺度 scale のガンマ分布 (Marsaglia–Tsang 法)。 */
+        gamma(shape, scale) {
+          if (shape < 1) {
+            // 形状 < 1 は、形状 +1 から変換して得る。
+            const u = Math.max(this.random(), 1e-12);
+            return this.gamma(shape + 1, scale) * Math.pow(u, 1 / shape);
+          }
+          const d = shape - 1 / 3;
+          const c = 1 / Math.sqrt(9 * d);
+          for (;;) {
+            let x;
+            let v;
+            do {
+              x = this.normal();
+              v = 1 + c * x;
+            } while (v <= 0);
+            v = v * v * v;
+            const u = Math.max(this.random(), 1e-12);
+            if (u < 1 - 0.0331 * x * x * x * x) return d * v * scale;
+            if (Math.log(u) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v * scale;
+          }
+        }
+
+        /**
+         * 次の到着までの時間。
+         * 平均は 60/λ 分のまま、変動係数 Ca だけを変える。
+         * Ca=0 なら一定間隔、Ca=1 なら指数分布（＝ポアソン到着）、
+         * Ca>1 なら短い間隔と長い間隔が混ざり、かたまって到着する。
+         * 形状 1/Ca²・尺度 平均·Ca² のガンマ分布は、平均と Ca をちょうど満たす。
+         */
+        nextInterarrival() {
+          const mean = this.meanInterarrival;
+          if (!Number.isFinite(mean) || mean <= 0) return Infinity;
+          const cv = this.params.arrivalCv;
+          if (cv <= 0.005) return mean;
+          if (Math.abs(cv - 1) < 0.005) return this.exponential(mean);
+          return this.gamma(1 / (cv * cv), mean * cv * cv);
+        }
+
+        get meanInterarrival() {
+          return this.params.arrivalsPerHour <= 0
+            ? Infinity
+            : 60 / this.params.arrivalsPerHour;
+        }
+
+        get meanService() {
+          return 60 / this.params.servicesPerHour;
+        }
+
+        reset() {
+          this.clock = 0;
+          this.nextId = 1;
+          this.queue.clear();
+          this.servers = new Array(this.params.servers).fill(null);
+          this.nextArrival = this.nextInterarrival();
+          this.clearStats();
+        }
+
+        clearStats() {
+          this.statsSince = this.clock;
+          this.arrived = 0;
+          this.served = 0;
+          this.balked = 0;
+          this.waitN = 0;
+          this.waitSum = 0;
+          this.waitMax = 0;
+          this.serviceSum = 0;
+          this.areaQueue = 0;
+          this.areaBusy = 0;
+          this.history = [];
+          this.histNext = this.clock;
+        }
+
+        /**
+         * パラメータを差し替える。行列・窓口・統計はそのまま引き継ぐので、
+         * 条件を変えたときに何が起きるかを連続して観察できる。
+         */
+        setParams(next) {
+          const params = {
+            arrivalsPerHour: clamp(next.arrivalsPerHour, 0, 600),
+            servicesPerHour: clamp(next.servicesPerHour, 0.5, 600),
+            servers: clamp(Math.round(next.servers), 1, 12),
+            arrivalCv: clamp(next.arrivalCv ?? 1, 0, 3),
+          };
+          this.params = params;
+
+          // 窓口を減らすときは、サービス中だった客を行列の先頭に戻す。
+          if (params.servers < this.servers.length) {
+            const removed = this.servers.splice(params.servers);
+            for (let i = removed.length - 1; i >= 0; i -= 1) {
+              if (removed[i]) this.queue.unshift(removed[i].customer);
+            }
+          } else {
+            while (this.servers.length < params.servers) this.servers.push(null);
+          }
+
+          // 指数分布は無記憶なので、サービス中の残り時間は新しい μ で引き直してよい。
+          for (const slot of this.servers) {
+            if (slot) slot.ends = this.clock + this.exponential(this.meanService);
+          }
+
+          this.nextArrival = this.clock + this.nextInterarrival();
+          this.dispatch();
+        }
+
+        busyCount() {
+          let count = 0;
+          for (const slot of this.servers) if (slot) count += 1;
+          return count;
+        }
+
+        /** 空いている窓口に、行列の先頭から客を割り当てる。 */
+        dispatch() {
+          for (let i = 0; i < this.servers.length; i += 1) {
+            if (this.servers[i]) continue;
+            if (this.queue.length === 0) break;
+            const customer = this.queue.shift();
+            const wait = Math.max(0, this.clock - customer.arrived);
+            this.waitN += 1;
+            this.waitSum += wait;
+            if (wait > this.waitMax) this.waitMax = wait;
+            const duration = this.exponential(this.meanService);
+            this.serviceSum += duration;
+            this.servers[i] = {
+              customer,
+              wait,
+              started: this.clock,
+              ends: this.clock + duration,
+            };
+          }
+        }
+
+        /** to まで時間を進め、面積（時間加重の統計）と履歴を積む。事象は処理しない。 */
+        accrue(to) {
+          if (to <= this.clock) return;
+          const queueLen = this.queue.length;
+          const busy = this.busyCount();
+
+          while (this.histNext <= to) {
+            if (this.histNext >= this.clock) {
+              this.history.push(queueLen);
+              if (this.history.length > HIST_LEN) this.history.shift();
+            }
+            this.histNext += HIST_DT;
+          }
+
+          const dt = to - this.clock;
+          this.areaQueue += queueLen * dt;
+          this.areaBusy += busy * dt;
+          this.clock = to;
+        }
+
+        nextEventTime() {
+          let t = this.nextArrival;
+          for (const slot of this.servers) {
+            if (slot && slot.ends < t) t = slot.ends;
+          }
+          return t;
+        }
+
+        /** シミュレーション時刻を dt 分進める。 */
+        advance(dt) {
+          if (!(dt > 0)) return;
+          const target = this.clock + dt;
+          let guard = 0;
+
+          for (;;) {
+            const eventAt = this.nextEventTime();
+            if (!Number.isFinite(eventAt) || eventAt > target) break;
+            guard += 1;
+            if (guard > MAX_EVENTS_PER_STEP) break;
+            this.accrue(eventAt);
+
+            // 同時刻なら退出を先に処理する。
+            let handled = false;
+            for (let i = 0; i < this.servers.length; i += 1) {
+              const slot = this.servers[i];
+              if (slot && slot.ends <= this.clock) {
+                this.servers[i] = null;
+                this.served += 1;
+                handled = true;
+              }
+            }
+            if (handled) {
+              this.dispatch();
+              continue;
+            }
+
+            if (this.nextArrival <= this.clock) {
+              this.arrived += 1;
+              if (this.queue.length < QUEUE_HARD_CAP) {
+                this.queue.push({ id: this.nextId++, arrived: this.clock });
+              } else {
+                this.balked += 1;
+              }
+              this.nextArrival = this.clock + this.nextInterarrival();
+              this.dispatch();
+            }
+          }
+
+          this.accrue(target);
+        }
+
+        stats() {
+          const elapsed = Math.max(0, this.clock - this.statsSince);
+          const avgQueue = elapsed > 0 ? this.areaQueue / elapsed : this.queue.length;
+          const avgBusy = elapsed > 0 ? this.areaBusy / elapsed : this.busyCount();
+          return {
+            elapsed,
+            arrived: this.arrived,
+            served: this.served,
+            avgWait: this.waitN > 0 ? this.waitSum / this.waitN : 0,
+            maxWait: this.waitMax,
+            avgQueue,
+            avgSystem: avgQueue + avgBusy,
+            utilization: avgBusy / Math.max(1, this.params.servers),
+            inService: this.busyCount(),
+          };
+        }
+      }
+
+      // ------------------------------------------------------------ 理論値
+
+      /** Erlang B の漸化式 B(n) = aB(n-1) / (n + aB(n-1)) から Erlang C を出す。 */
+      function erlangC(c, a) {
+        if (a <= 0) return 0;
+        let b = 1;
+        for (let n = 1; n <= c; n += 1) b = (a * b) / (n + a * b);
+        const rho = a / c;
+        const denominator = 1 - rho * (1 - b);
+        return denominator <= 0 ? 1 : clamp(b / denominator, 0, 1);
+      }
+
+      /**
+       * 定常状態の理論値。
+       *
+       * 到着がポアソン (Ca=1) なら M/M/c の厳密解。
+       * Ca≠1 のときは Allen–Cunneen 近似を使う:
+       *
+       *   Wq(G/M/c) ≈ (Ca² + Cs²)/2 × Wq(M/M/c)
+       *
+       * サービス時間は指数分布なので Cs=1。つまり到着のバラツキが大きいほど、
+       * 同じ到着数・同じ処理能力でも待ち時間はまっすぐ伸びる。
+       */
+      function theoryOf(params) {
+        const lambda = params.arrivalsPerHour;
+        const mu = params.servicesPerHour;
+        const c = Math.max(1, params.servers);
+        const ca = params.arrivalCv ?? 1;
+        const cs = 1; // サービス時間は指数分布
+        const factor = (ca * ca + cs * cs) / 2;
+        const exact = Math.abs(ca - 1) < 0.005;
+        const meanService = 60 / mu;
+        const a = lambda / mu; // 提供トラフィック（アーラン）
+        const rho = a / c;
+
+        if (lambda <= 0) {
+          return {
+            rho: 0, stable: true, meanInterarrival: Infinity, meanService,
+            pWait: 0, lq: 0, wq: 0, l: 0, w: meanService, ca, factor, exact,
+          };
+        }
+
+        const stable = rho < 1;
+        const pWait = erlangC(c, a);
+        if (!stable) {
+          return {
+            rho, stable, meanInterarrival: 60 / lambda, meanService,
+            pWait, lq: Infinity, wq: Infinity, l: Infinity, w: Infinity,
+            ca, factor, exact,
+          };
+        }
+        // M/M/c の厳密値
+        const lqMM = (pWait * rho) / (1 - rho);
+        const wqMM = (60 * lqMM) / lambda;
+        // バラツキで補正し、Lq はリトルの法則から戻す
+        const wq = wqMM * factor;
+        const lq = (lambda / 60) * wq;
+        return {
+          rho, stable, meanInterarrival: 60 / lambda, meanService,
+          pWait, lq, wq, l: lq + a, w: wq + meanService,
+          ca, factor, exact, lqMM, wqMM,
+        };
+      }
+
+      // ------------------------------------------------------------ 画面
+
+      const el = (id) => document.getElementById(id);
+      const ui = {
+        arrivals: el("arrivals"), arrivalsOut: el("arrivals-out"),
+        burst: el("burst"), burstOut: el("burst-out"), burstNote: el("burst-note"),
+        services: el("services"), servicesOut: el("services-out"),
+        servers: el("servers"), serversOut: el("servers-out"),
+        speed: el("speed"), speedOut: el("speed-out"),
+        meanIa: el("mean-ia"), meanSvc: el("mean-svc"), capacity: el("capacity"),
+        rho: document.querySelector(".rho"), rhoValue: el("rho-value"),
+        rhoFill: el("rho-fill"), rhoNote: el("rho-note"),
+        toggle: el("toggle"), reset: el("reset"), clock: el("clock"),
+        nowQueue: el("now-queue"), nowBusy: el("now-busy"),
+        avgWait: el("avg-wait"), thWait: el("th-wait"),
+        avgQueue: el("avg-queue"), thQueue: el("th-queue"),
+        util: el("util"), thPwait: el("th-pwait"),
+        maxWait: el("max-wait"), served: el("served"),
+        theory: el("theory"), tWq: el("t-wq"), tLq: el("t-lq"), tW: el("t-w"),
+        tL: el("t-l"), tPw: el("t-pw"), tA: el("t-a"), tNote: el("t-note"),
+        tFactor: el("t-factor"), tModel: el("t-model"),
+        scene: el("scene"), chart: el("chart"),
+      };
+
+      const FONT_UI =
+        '-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", "Segoe UI", sans-serif';
+      const FONT_NUM =
+        'ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace';
+
+      const sim = new Sim({
+        arrivalsPerHour: 60,
+        servicesPerHour: 30,
+        servers: 3,
+        arrivalCv: 1,
+      });
+      let running = true;
+      let speed = 1; // 実時間1秒あたりに進むシミュレーション分
+      /** 客ごとの描画状態。id -> dot */
+      const dots = new Map();
+      /** 到着・完了のリング演出。 */
+      const pulses = [];
+      let lastFrame = performance.now();
+      let readoutsAt = 0;
+      let reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // ---------- 色 ----------
+
+      let palette = readPalette();
+
+      function readPalette() {
+        const styles = getComputedStyle(document.body);
+        const pick = (name, fallback) =>
+          parseColor(styles.getPropertyValue(name).trim()) || parseColor(fallback);
+        return {
+          fg: pick("--fg", "#16222b"),
+          muted: pick("--muted", "#5b6e7a"),
+          line: pick("--line", "#c8d2d9"),
+          lineSoft: pick("--line-soft", "#dde5ea"),
+          surface: pick("--surface", "#ffffff"),
+          surface2: pick("--surface-2", "#f2f6f8"),
+          accent: pick("--accent", "#0d7d80"),
+          accentSoft: pick("--accent-soft", "#d6eaea"),
+          warn: pick("--warn", "#b06a1b"),
+          crit: pick("--crit", "#a52f3a"),
+          ok: pick("--ok", "#2f7d4f"),
+        };
+      }
+
+      function parseColor(value) {
+        if (!value) return null;
+        const hex = value.replace("#", "");
+        if (/^[0-9a-f]{6}$/i.test(hex)) {
+          return [
+            parseInt(hex.slice(0, 2), 16),
+            parseInt(hex.slice(2, 4), 16),
+            parseInt(hex.slice(4, 6), 16),
+          ];
+        }
+        const match = value.match(/rgba?\(([^)]+)\)/);
+        if (match) {
+          const parts = match[1].split(/[,\s/]+/).map(Number);
+          return [parts[0], parts[1], parts[2]];
+        }
+        return null;
+      }
+
+      const rgba = (color, alpha = 1) =>
+        `rgba(${Math.round(color[0])}, ${Math.round(color[1])}, ${Math.round(
+          color[2]
+        )}, ${alpha})`;
+
+      function mix(a, b, t) {
+        const k = clamp(t, 0, 1);
+        return [
+          a[0] + (b[0] - a[0]) * k,
+          a[1] + (b[1] - a[1]) * k,
+          a[2] + (b[2] - a[2]) * k,
+        ];
+      }
+
+      /** 待ち時間が平均サービス時間の何倍かで、青緑 → 琥珀 → 赤へ。 */
+      function waitColor(waitMinutes, meanService) {
+        const t = clamp(waitMinutes / (Math.max(meanService, 0.25) * 3), 0, 1);
+        return t < 0.5
+          ? mix(palette.accent, palette.warn, t / 0.5)
+          : mix(palette.warn, palette.crit, (t - 0.5) / 0.5);
+      }
+
+      window
+        .matchMedia("(prefers-color-scheme: dark)")
+        .addEventListener("change", () => {
+          palette = readPalette();
+        });
+      window
+        .matchMedia("(prefers-reduced-motion: reduce)")
+        .addEventListener("change", (event) => {
+          reducedMotion = event.matches;
+        });
+
+      // ---------- 書式 ----------
+
+      function fixed(value, digits = 1) {
+        return Number.isFinite(value) ? value.toFixed(digits) : "∞";
+      }
+
+      /** 値の大きさに応じて桁数を変える。0.03 分のような小さい値も読めるように。 */
+      function smart(value) {
+        if (!Number.isFinite(value)) return "∞";
+        if (value >= 100) return value.toFixed(0);
+        if (value >= 10) return value.toFixed(1);
+        return value.toFixed(2);
+      }
+
+      /** 変動係数を、画面で読んで分かる言葉にする。 */
+      function burstWord(cv) {
+        if (cv <= 0.005) return "一定間隔（ゆらぎなし）";
+        if (cv < 0.5) return "規則的（ほぼ等間隔）";
+        if (cv < 0.9) return "ややムラがある";
+        if (cv <= 1.1) return "ポアソン到着（完全にランダム）";
+        if (cv <= 1.8) return "かたまって来やすい";
+        return "バースト（数分おきにドバっと来る）";
+      }
+
+      function formatClock(minutes) {
+        const total = Math.max(0, Math.floor(minutes * 60));
+        const h = Math.floor(total / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+        return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      }
+
+      function setValue(node, text, unit) {
+        node.textContent = text;
+        if (unit) {
+          const i = document.createElement("i");
+          i.textContent = unit;
+          node.appendChild(i);
+        }
+      }
+
+      // ---------- キャンバス ----------
+
+      function sizeCanvas(canvas) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(1, Math.round(rect.width * dpr));
+        const height = Math.max(1, Math.round(rect.height * dpr));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { ctx, width: rect.width, height: rect.height };
+      }
+
+      function roundRect(ctx, x, y, w, h, r) {
+        const radius = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, radius);
+        ctx.arcTo(x + w, y + h, x, y + h, radius);
+        ctx.arcTo(x, y + h, x, y, radius);
+        ctx.arcTo(x, y, x + w, y, radius);
+        ctx.closePath();
+      }
+
+      // ---------- 舞台の配置 ----------
+
+      function sceneLayout(width, height, serverCount) {
+        const pad = 16;
+        const topY = pad + 20;
+        const botY = height - pad - 18;
+        const entranceX = pad + 24;
+        const exitLane = 78;
+        const winW = clamp(width * 0.17, 104, 158);
+        const winRight = width - pad - exitLane;
+        const winLeft = winRight - winW;
+        // 窓口どうしが離れすぎないよう行の高さに上限を置き、ブロックごと中央に置く。
+        const rowH = Math.min((botY - topY) / serverCount, 62);
+        const boxH = Math.min(rowH - 6, 34);
+        const centerY = (topY + botY) / 2;
+        const blockTop = centerY - (rowH * serverCount) / 2;
+
+        return {
+          pad, topY, botY, entranceX, winLeft, winRight, winW, rowH, boxH,
+          centerY, blockTop,
+          queueLeft: entranceX + 30,
+          queueRight: winLeft - 28,
+          exitX: width + 34,
+          dotR: clamp(Math.min(rowH * 0.3, 11), 4.5, 11),
+          rowY: (i) => blockTop + rowH * (i + 0.5),
+        };
+      }
+
+      /** id から決まる小さなゆらぎ。行列が機械的に並びすぎないように。 */
+      function jitter(id) {
+        const x = Math.sin(id * 12.9898) * 43758.5453;
+        return (x - Math.floor(x)) * 2 - 1;
+      }
+
+      function updateDots(layout, dt) {
+        const queueSpan = Math.max(40, layout.queueRight - layout.queueLeft);
+        const maxSlots = Math.max(1, Math.floor(queueSpan / (layout.dotR * 1.9)));
+        const drawn = Math.min(sim.queue.length, maxSlots);
+        const gap =
+          drawn > 1 ? Math.min(layout.dotR * 2.8, queueSpan / (drawn - 1)) : 0;
+        const seen = new Set();
+
+        const touch = (id, target) => {
+          seen.add(id);
+          let dot = dots.get(id);
+          if (!dot) {
+            // 新しい客は入口の左手前から歩いてくる。
+            dot = {
+              x: layout.entranceX - 22 - Math.random() * 40,
+              y: layout.centerY + jitter(id) * 6,
+              state: "arriving",
+              wait: 0,
+              alpha: 0,
+              pop: 0,
+            };
+            dots.set(id, dot);
+            pulses.push({ x: layout.entranceX, y: layout.centerY, t: 0, kind: "arrive" });
+          }
+          if (dot.state === "queue" && target.state === "service") dot.pop = 1;
+          dot.target = target;
+          dot.wait = target.wait;
+          dot.label = target.label;
+          if (dot.state === "arriving") {
+            const close = Math.abs(dot.x - target.x) < layout.dotR * 1.5;
+            if (close) dot.state = target.state;
+          } else {
+            dot.state = target.state;
+          }
+        };
+
+        // 行列の先頭（index 0）は窓口に近い右端。
+        for (let i = 0; i < drawn; i += 1) {
+          const customer = sim.queue.at(i);
+          const wait = Math.max(0, sim.clock - customer.arrived);
+          touch(customer.id, {
+            x: layout.queueRight - gap * i,
+            y: layout.centerY + jitter(customer.id) * Math.min(3, layout.dotR * 0.3),
+            state: "queue",
+            wait,
+            label: wait,
+          });
+        }
+
+        for (let i = 0; i < sim.servers.length; i += 1) {
+          const slot = sim.servers[i];
+          if (!slot) continue;
+          touch(slot.customer.id, {
+            x: layout.winLeft + layout.dotR + 7,
+            y: layout.rowY(i),
+            state: "service",
+            wait: slot.wait,
+            label: slot.wait,
+          });
+        }
+
+        for (const [id, dot] of dots) {
+          if (!seen.has(id) && dot.state !== "leaving") {
+            if (dot.state === "service") {
+              // サービスが終わった客。右へ退出させる。
+              dot.state = "leaving";
+              dot.target = { x: layout.exitX, y: dot.y };
+              pulses.push({ x: dot.x, y: dot.y, t: 0, kind: "done" });
+            } else {
+              // 行列が長すぎて描画枠から外れただけ。退出ではないので静かに消す。
+              dots.delete(id);
+              continue;
+            }
+          }
+
+          if (dot.state === "leaving") {
+            dot.x += 190 * dt;
+            dot.alpha = Math.max(0, dot.alpha - dt * 1.4);
+            if (dot.alpha <= 0.01 || dot.x > layout.exitX) dots.delete(id);
+            continue;
+          }
+
+          const target = dot.target;
+          if (!target) continue;
+          const k = dot.state === "arriving" ? 4.5 : dot.state === "service" ? 9 : 7;
+          const ease = reducedMotion ? 1 : 1 - Math.exp(-k * dt);
+          // 到着した客はまず行列のレール上を歩き、先頭まで来てから窓口へ逸れる。
+          const aimY =
+            dot.state === "arriving" && dot.x < layout.queueRight - 12
+              ? layout.centerY
+              : target.y;
+          dot.x += (target.x - dot.x) * ease;
+          dot.y += (aimY - dot.y) * ease;
+          dot.alpha = Math.min(1, dot.alpha + dt * 3);
+          dot.pop = Math.max(0, dot.pop - dt * 3);
+        }
+
+        for (let i = pulses.length - 1; i >= 0; i -= 1) {
+          pulses[i].t += dt;
+          if (pulses[i].t > 0.7) pulses.splice(i, 1);
+        }
+
+        return { overflow: sim.queue.length - drawn, gap };
+      }
+
+      /** 客ひとり。小さいときは丸、余裕があれば頭と体のある人型で描く。 */
+      function drawPerson(ctx, x, y, r, color, alpha, ring) {
+        ctx.fillStyle = rgba(color, alpha);
+        ctx.strokeStyle = ring
+          ? rgba(ring, Math.min(1, alpha))
+          : rgba(palette.surface, alpha * 0.85);
+        ctx.lineWidth = ring ? 1.8 : 1;
+
+        if (r < 5.5) {
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          return;
+        }
+
+        const bodyW = r * 1.5;
+        const bodyH = r * 1.15;
+        roundRect(ctx, x - bodyW / 2, y - r * 0.1, bodyW, bodyH, r * 0.62);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(x, y - r * 0.62, r * 0.52, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      function drawScene(dt) {
+        const { ctx, width, height } = sizeCanvas(ui.scene);
+        ctx.clearRect(0, 0, width, height);
+
+        const layout = sceneLayout(width, height, sim.servers.length);
+        const { overflow, gap } = updateDots(layout, dt);
+        const meanService = sim.meanService;
+        const labelFont = `500 10.5px ${FONT_UI}`;
+
+        // 行列のレール。
+        ctx.strokeStyle = rgba(palette.line, 0.85);
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(layout.entranceX, layout.centerY);
+        ctx.lineTo(layout.queueRight + 6, layout.centerY);
+        ctx.stroke();
+
+        // 行列の先頭から各窓口へ分かれる線。
+        for (let i = 0; i < sim.servers.length; i += 1) {
+          ctx.beginPath();
+          ctx.moveTo(layout.queueRight + 8, layout.centerY);
+          ctx.lineTo(layout.winLeft - 6, layout.rowY(i));
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // 入口。
+        ctx.strokeStyle = rgba(palette.accent, 0.85);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(layout.entranceX, layout.centerY - 26);
+        ctx.lineTo(layout.entranceX, layout.centerY + 26);
+        ctx.stroke();
+
+        ctx.font = labelFont;
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = rgba(palette.muted, 1);
+        ctx.textAlign = "center";
+        ctx.fillText("到着", layout.entranceX, layout.centerY - 36);
+        ctx.textAlign = "left";
+        ctx.fillText(
+          `${Math.round(sim.params.arrivalsPerHour)}人/時 · 平均${fixed(
+            sim.meanInterarrival,
+            2
+          )}分おき · バラツキ Ca=${sim.params.arrivalCv.toFixed(1)}`,
+          layout.pad,
+          layout.botY + 14
+        );
+
+        // 待ち行列の見出し。
+        ctx.textAlign = "center";
+        const queueMid = (layout.queueLeft + layout.queueRight) / 2;
+        ctx.fillStyle = rgba(palette.muted, 1);
+        ctx.fillText("待ち行列", queueMid, layout.centerY - 46);
+        ctx.font = `600 14px ${FONT_UI}`;
+        ctx.fillStyle = rgba(palette.fg, 1);
+        ctx.fillText(`${sim.queue.length}人`, queueMid, layout.centerY - 29);
+
+        // 窓口の見出しと退出。
+        ctx.font = labelFont;
+        ctx.fillStyle = rgba(palette.muted, 1);
+        ctx.fillText(
+          `窓口 ${sim.params.servers}`,
+          (layout.winLeft + layout.winRight) / 2,
+          layout.blockTop - 9
+        );
+        ctx.textAlign = "right";
+        ctx.fillText("退出 →", width - layout.pad, layout.botY + 14);
+
+        if (overflow > 0) {
+          ctx.textAlign = "left";
+          ctx.fillText(`他 ${overflow} 人`, layout.pad + 2, layout.centerY + 4);
+        }
+
+        // 窓口。
+        for (let i = 0; i < sim.servers.length; i += 1) {
+          const slot = sim.servers[i];
+          const y = layout.rowY(i);
+          const top = y - layout.boxH / 2;
+          roundRect(ctx, layout.winLeft, top, layout.winW, layout.boxH, 7);
+          ctx.fillStyle = slot ? rgba(palette.accentSoft, 1) : rgba(palette.surface2, 1);
+          ctx.fill();
+          ctx.strokeStyle = slot ? rgba(palette.accent, 0.55) : rgba(palette.line, 0.9);
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          if (layout.boxH >= 18) {
+            const shift = layout.boxH >= 26 ? 4 : 0;
+            ctx.textBaseline = "middle";
+            ctx.font = labelFont;
+            ctx.textAlign = "right";
+            ctx.fillStyle = rgba(palette.muted, 1);
+            ctx.fillText(
+              slot ? `残り${fixed(Math.max(0, slot.ends - sim.clock), 1)}分` : "空き",
+              layout.winRight - 8,
+              y - shift
+            );
+            ctx.textAlign = "left";
+            ctx.fillStyle = rgba(palette.fg, 0.75);
+            ctx.fillText(`${i + 1}`, layout.winLeft + layout.dotR * 2 + 14, y - shift);
+            ctx.textBaseline = "alphabetic";
+          }
+
+          // サービスの進捗。
+          if (slot && layout.boxH >= 22) {
+            const total = Math.max(1e-9, slot.ends - slot.started);
+            const progress = clamp((sim.clock - slot.started) / total, 0, 1);
+            const barLeft = layout.winLeft + 10;
+            const barRight = layout.winRight - 10;
+            const barY = top + layout.boxH - 8;
+            ctx.lineCap = "round";
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = rgba(palette.line, 1);
+            ctx.beginPath();
+            ctx.moveTo(barLeft, barY);
+            ctx.lineTo(barRight, barY);
+            ctx.stroke();
+            ctx.strokeStyle = rgba(palette.accent, 1);
+            ctx.beginPath();
+            ctx.moveTo(barLeft, barY);
+            ctx.lineTo(barLeft + (barRight - barLeft) * progress, barY);
+            ctx.stroke();
+            ctx.lineCap = "butt";
+          }
+        }
+
+        // 演出リング。
+        for (const pulse of pulses) {
+          const t = pulse.t / 0.7;
+          const color = pulse.kind === "arrive" ? palette.accent : palette.ok;
+          ctx.strokeStyle = rgba(color, (1 - t) * 0.5);
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(pulse.x, pulse.y, 5 + t * 18, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // 客。
+        for (const dot of dots.values()) {
+          const r = layout.dotR * (1 + dot.pop * 0.25);
+          const color =
+            dot.state === "leaving" ? palette.ok : waitColor(dot.wait, meanService);
+          drawPerson(ctx, dot.x, dot.y, r, color, dot.alpha);
+        }
+
+        // 待ち時間を頭の上に。混みすぎたら間引いて重ならないようにする。
+        drawWaitLabels(ctx, layout, gap, meanService, dots);
+      }
+
+      /** 各客の頭の上に待ち時間（分）を書く。 */
+      function drawWaitLabels(ctx, layout, gap, meanService, dotMap) {
+        if (layout.dotR < 5.5) return;
+        ctx.font = `600 9.5px ${FONT_NUM}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+
+        // 行列が詰まっているときは何人かおきに表示する。
+        const step = gap > 0 ? Math.max(1, Math.ceil(26 / gap)) : 1;
+        let index = -1;
+
+        for (const dot of dotMap.values()) {
+          if (dot.state === "leaving" || dot.state === "arriving") continue;
+          if (dot.alpha < 0.4) continue;
+          if (dot.state === "queue") {
+            index += 1;
+            if (index % step !== 0) continue;
+          }
+          const text = `${fixed(dot.label ?? dot.wait, 1)}分`;
+          const y = dot.y - layout.dotR * 1.35 - 4;
+          // 文字が背景に埋もれないよう、薄い縁取りを敷く。
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = rgba(palette.surface, 0.85 * dot.alpha);
+          ctx.strokeText(text, dot.x, y);
+          ctx.fillStyle = rgba(
+            waitColor(dot.wait, meanService),
+            Math.min(1, dot.alpha)
+          );
+          ctx.fillText(text, dot.x, y);
+        }
+      }
+
+      // ---------- グラフ ----------
+
+      function drawChart(theory) {
+        const { ctx, width, height } = sizeCanvas(ui.chart);
+        ctx.clearRect(0, 0, width, height);
+
+        const left = 30;
+        const right = width - 8;
+        const top = 8;
+        const bottom = height - 16;
+        const history = sim.history;
+        const theoryLq = theory.stable ? theory.lq : null;
+
+        let peak = 1;
+        for (const value of history) if (value > peak) peak = value;
+        if (theoryLq != null) peak = Math.max(peak, theoryLq);
+        const yMax = Math.max(2, Math.ceil(peak * 1.25));
+
+        const xAt = (i) =>
+          left + (right - left) * (history.length <= 1 ? 1 : i / (history.length - 1));
+        const yAt = (value) => bottom - (bottom - top) * (value / yMax);
+
+        ctx.strokeStyle = rgba(palette.lineSoft, 1);
+        ctx.lineWidth = 1;
+        ctx.font = `500 9.5px ${FONT_NUM}`;
+        ctx.fillStyle = rgba(palette.muted, 1);
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (const value of [0, yMax / 2, yMax]) {
+          const y = yAt(value);
+          ctx.beginPath();
+          ctx.moveTo(left, y);
+          ctx.lineTo(right, y);
+          ctx.stroke();
+          ctx.fillText(String(Math.round(value)), left - 6, y);
+        }
+
+        if (history.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(xAt(0), yAt(history[0]));
+          for (let i = 1; i < history.length; i += 1) ctx.lineTo(xAt(i), yAt(history[i]));
+          ctx.strokeStyle = rgba(palette.accent, 1);
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+          ctx.lineTo(xAt(history.length - 1), bottom);
+          ctx.lineTo(xAt(0), bottom);
+          ctx.closePath();
+          ctx.fillStyle = rgba(palette.accent, 0.14);
+          ctx.fill();
+        }
+
+        if (theoryLq != null && theoryLq <= yMax) {
+          const y = yAt(theoryLq);
+          ctx.setLineDash([5, 4]);
+          ctx.strokeStyle = rgba(palette.muted, 0.9);
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(left, y);
+          ctx.lineTo(right, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        ctx.font = `500 9.5px ${FONT_UI}`;
+        ctx.fillStyle = rgba(palette.muted, 1);
+        ctx.textAlign = "left";
+        ctx.fillText(`直近 ${Math.round(history.length * HIST_DT)} 分`, left + 2, bottom + 9);
+        ctx.textAlign = "right";
+        ctx.fillText("人", left - 6, top + 2);
+      }
+
+      // ---------- 指標 ----------
+
+      function renderReadouts(theory) {
+        const params = sim.params;
+        const stats = sim.stats();
+
+        setValue(ui.arrivalsOut, String(Math.round(params.arrivalsPerHour)), "人/時");
+        setValue(ui.servicesOut, String(Math.round(params.servicesPerHour)), "人/時");
+        setValue(ui.serversOut, String(params.servers), "窓口");
+        ui.meanIa.textContent = Number.isFinite(theory.meanInterarrival)
+          ? fixed(theory.meanInterarrival, 2)
+          : "—";
+        ui.meanSvc.textContent = fixed(theory.meanService, 2);
+        ui.capacity.textContent = String(
+          Math.round(params.servicesPerHour * params.servers)
+        );
+
+        const rho = theory.rho;
+        ui.rhoValue.textContent = fixed(rho, 2);
+        ui.rhoFill.style.width = `${clamp(rho / 1.2, 0, 1) * 100}%`;
+        if (rho >= 1) {
+          ui.rho.dataset.state = "unstable";
+          ui.rhoFill.style.background = "var(--crit)";
+          ui.rhoNote.textContent =
+            "ρ ≥ 1。到着が処理能力を超えているので行列は伸び続けます。";
+        } else if (rho >= 0.85) {
+          ui.rho.dataset.state = "tight";
+          ui.rhoFill.style.background = "var(--warn)";
+          ui.rhoNote.textContent = "ρ が 1 に近づくと、待ち時間は急激に伸びます。";
+        } else {
+          ui.rho.dataset.state = "calm";
+          ui.rhoFill.style.background = "var(--accent)";
+          ui.rhoNote.textContent = "ρ < 1 なら行列は一定の長さで落ち着きます。";
+        }
+
+        // 到着のバラツキ。
+        setValue(ui.burstOut, params.arrivalCv.toFixed(1), "Ca");
+        ui.burstNote.textContent = burstWord(params.arrivalCv);
+
+        // 理論値。スライダーの値だけから決まる、定常状態での待ち時間と待ち人数。
+        const a = params.arrivalsPerHour / params.servicesPerHour;
+        setValue(ui.tWq, smart(theory.wq), "分");
+        setValue(ui.tLq, smart(theory.lq), "人");
+        setValue(ui.tW, smart(theory.w), "分");
+        setValue(ui.tL, smart(theory.l), "人");
+        setValue(ui.tPw, (theory.pWait * 100).toFixed(1), "%");
+        setValue(ui.tA, a.toFixed(2), "アーラン");
+        ui.tFactor.textContent = `×${theory.factor.toFixed(2)}`;
+        ui.tModel.textContent = theory.exact
+          ? "M/M/c の厳密解"
+          : "G/M/c · Allen–Cunneen 近似";
+
+        if (theory.stable) {
+          delete ui.theory.dataset.state;
+          ui.tNote.style.whiteSpace = "pre-line";
+          ui.tNote.textContent = theory.exact
+            ? "a = λ/μ、 ρ = a/c、 C(c,a) = Erlang C\n" +
+              "Lq = C·ρ/(1−ρ)、 Wq = Lq/λ\n" +
+              "L = Lq + a、 W = Wq + 1/μ"
+            : "Wq ≈ (Ca²+Cs²)/2 × Wq(M/M/c)\n" +
+              `Cs = 1 (指数サービス) なので ×${theory.factor.toFixed(2)}\n` +
+              `ポアソンなら ${smart(theory.wqMM)} 分 → いまは ${smart(theory.wq)} 分` +
+              (theory.ca > 2
+                ? "\nCa が大きい領域では、近似は実測より小さめに出ます"
+                : "");
+        } else {
+          ui.theory.dataset.state = "unstable";
+          ui.tNote.style.whiteSpace = "normal";
+          ui.tNote.textContent =
+            params.arrivalsPerHour <= 0
+              ? "到着がないので行列はできません。"
+              : "ρ ≥ 1 のため定常状態が存在せず、待ち時間も待ち人数も発散します。";
+        }
+
+        ui.clock.textContent = formatClock(sim.clock);
+        setValue(ui.nowQueue, String(sim.queue.length), "人");
+        ui.nowBusy.textContent = `${stats.inService} / ${params.servers}`;
+
+        setValue(ui.avgWait, fixed(stats.avgWait, 1), "分");
+        ui.thWait.textContent = theory.stable ? fixed(theory.wq, 1) : "∞";
+        setValue(ui.avgQueue, fixed(stats.avgQueue, 1), "人");
+        ui.thQueue.textContent = theory.stable ? fixed(theory.lq, 1) : "∞";
+        setValue(ui.util, String(Math.round(stats.utilization * 100)), "%");
+        ui.thPwait.textContent = String(Math.round(theory.pWait * 100));
+        setValue(ui.maxWait, fixed(stats.maxWait, 1), "分");
+        ui.served.textContent = String(stats.served);
+
+        const tone = rho >= 1 ? "crit" : rho >= 0.85 ? "warn" : "";
+        for (const id of ["avg-wait", "avg-queue"]) {
+          const tile = el(id).closest(".tile");
+          if (tone) tile.dataset.tone = tone;
+          else delete tile.dataset.tone;
+        }
+      }
+
+      // ---------- 入力 ----------
+
+      function pushParams() {
+        sim.setParams({
+          arrivalsPerHour: Number(ui.arrivals.value),
+          servicesPerHour: Number(ui.services.value),
+          servers: Number(ui.servers.value),
+          arrivalCv: Number(ui.burst.value),
+        });
+        readoutsAt = 0;
+      }
+
+      for (const input of [ui.arrivals, ui.burst, ui.services, ui.servers]) {
+        input.addEventListener("input", pushParams);
+      }
+
+      ui.speed.addEventListener("input", () => {
+        speed = Number(ui.speed.value);
+        setValue(ui.speedOut, fixed(speed, 2).replace(/0$/, ""), "分/秒");
+      });
+
+      ui.toggle.addEventListener("click", () => {
+        running = !running;
+        ui.toggle.textContent = running ? "一時停止" : "再開";
+      });
+
+      ui.reset.addEventListener("click", () => {
+        sim.reset();
+        dots.clear();
+        pulses.length = 0;
+        readoutsAt = 0;
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLButtonElement) return;
+        if (event.code === "Space") {
+          event.preventDefault();
+          el(activeTab === "bottleneck" ? "b-toggle" : activeTab === "day" ? "d-toggle" : "toggle").click();
+        } else if (event.key === "r" || event.key === "R") {
+          el(activeTab === "bottleneck" ? "b-reset" : activeTab === "day" ? "d-reset" : "reset").click();
+        }
+      });
+
+      // =====================================================================
+      // 開店日シミュレーション
+      //
+      // 10:00 から窓口の前に行列ができ始め、12:00 に全窓口が一斉オープン、
+      // 16:00 で受付終了（到着が止まる）。残った客はさばき終わるまで対応する。
+      //
+      // 開店前の行列では係員が「先行受付」をして回る。受付を済ませた客は、
+      // 窓口を短い時間で通過できる。
+      // =====================================================================
+
+      const DAY_FROM = 10 * 60; // 10:00 行列ができ始める
+      const DAY_OPEN = 12 * 60; // 12:00 一斉オープン
+      const DAY_CLOSE = 16 * 60; // 16:00 受付終了
+      const DAY_HOURS = [10, 11, 12, 13, 14, 15];
+      const DAY_SAMPLE = 1; // グラフの記録間隔（分）
+
+      class DaySim {
+        constructor(config) {
+          this.config = config;
+          this.reset();
+        }
+
+        reset() {
+          this.random = makeRng(0x0da1_0ca1);
+          this.clock = DAY_FROM;
+          this.nextId = 1;
+          this.queue = new Queue();
+          this.servers = [];
+          this.desks = new Array(this.config.preStaff).fill(null);
+          this.boundaryDue = DAY_OPEN;
+          this.finishedAt = null;
+
+          this.arrived = 0;
+          this.served = 0;
+          this.servedPre = 0;
+          this.registered = 0;
+          this.waitN = 0;
+          this.waitSum = 0;
+          this.waitMax = 0;
+          // 開店前から並んでいた人は必ず開店まで待つので、
+          // 開店後に来た客の待ち時間は分けて見る。
+          this.waitNPost = 0;
+          this.waitSumPost = 0;
+          this.maxQueue = 0;
+          this.history = [];
+          this.histNext = DAY_FROM;
+
+          this.nextArrival = this.arrivalAfter(DAY_FROM);
+          this.applyWindows();
+        }
+
+        exponential(mean) {
+          if (!Number.isFinite(mean) || mean <= 0) return Infinity;
+          return -mean * Math.log(Math.max(this.random(), 1e-12));
+        }
+
+        /** その時刻の到着率（人/分）。16:00 以降は 0。 */
+        rateAt(t) {
+          if (t >= DAY_CLOSE) return 0;
+          return (this.config.arrivals[Math.floor(t / 60)] ?? 0) / 60;
+        }
+
+        /** その時刻に開いている窓口数。12:00 より前は 0。 */
+        windowsAt(t) {
+          if (t < DAY_OPEN) return 0;
+          const hour = Math.min(15, Math.floor(t / 60));
+          return this.config.windows[hour] ?? 0;
+        }
+
+        /**
+         * 次の到着時刻。到着率が時間帯ごとに変わるので、
+         * 単位指数分布の「残量」を時間帯をまたぎながら消化していく。
+         * これで区分定常のポアソン過程をそのまま再現できる。
+         */
+        arrivalAfter(from) {
+          let remaining = -Math.log(Math.max(this.random(), 1e-12));
+          let t = from;
+          for (let guard = 0; guard < 64; guard += 1) {
+            if (t >= DAY_CLOSE) return Infinity;
+            const rate = this.rateAt(t);
+            const boundary = Math.min((Math.floor(t / 60) + 1) * 60, DAY_CLOSE);
+            if (rate > 0) {
+              const dt = remaining / rate;
+              if (t + dt <= boundary) return t + dt;
+              remaining -= (boundary - t) * rate;
+            }
+            t = boundary;
+          }
+          return Infinity;
+        }
+
+        busyCount() {
+          let n = 0;
+          for (const slot of this.servers) if (slot) n += 1;
+          return n;
+        }
+
+        deskBusyCount() {
+          let n = 0;
+          for (const desk of this.desks) if (desk) n += 1;
+          return n;
+        }
+
+        /** 時間帯に合わせて窓口数を変える。減らすときは客を行列の先頭に戻す。 */
+        applyWindows() {
+          const want = this.windowsAt(this.clock);
+          if (this.servers.length === want) return;
+          if (want < this.servers.length) {
+            const removed = this.servers.splice(want);
+            for (let i = removed.length - 1; i >= 0; i -= 1) {
+              if (removed[i]) {
+                removed[i].customer.gone = false;
+                this.queue.unshift(removed[i].customer);
+              }
+            }
+          } else {
+            while (this.servers.length < want) this.servers.push(null);
+          }
+          this.dispatch();
+        }
+
+        /** 空いた窓口に行列の先頭から客を入れる。 */
+        dispatch() {
+          for (let i = 0; i < this.servers.length; i += 1) {
+            if (this.servers[i]) continue;
+            if (this.queue.length === 0) break;
+            const customer = this.queue.shift();
+            customer.gone = true;
+            // 受付の途中で呼ばれたら、その係員は手を離す。
+            if (customer.beingRegistered) {
+              for (let d = 0; d < this.desks.length; d += 1) {
+                if (this.desks[d] && this.desks[d].customer === customer) {
+                  this.desks[d] = null;
+                }
+              }
+              customer.beingRegistered = false;
+            }
+            const wait = Math.max(0, this.clock - customer.arrived);
+            this.waitN += 1;
+            this.waitSum += wait;
+            if (wait > this.waitMax) this.waitMax = wait;
+            if (customer.arrived >= DAY_OPEN) {
+              this.waitNPost += 1;
+              this.waitSumPost += wait;
+            }
+            const mean = customer.registered
+              ? this.config.shortService
+              : this.config.normalService;
+            this.servers[i] = {
+              customer,
+              wait,
+              pre: customer.registered,
+              started: this.clock,
+              ends: this.clock + this.exponential(mean),
+            };
+          }
+        }
+
+        /** 行列の前のほうから、まだ受付していない客を探す。 */
+        findUnregistered() {
+          for (let i = 0; i < this.queue.length; i += 1) {
+            const customer = this.queue.at(i);
+            if (!customer.registered && !customer.beingRegistered) return customer;
+          }
+          return null;
+        }
+
+        /** 手の空いた係員に、行列の客を割り当てる。 */
+        assignDesks() {
+          if (this.desks.length === 0) return;
+          if (!this.config.preAfterOpen && this.clock >= DAY_OPEN) return;
+          for (let i = 0; i < this.desks.length; i += 1) {
+            if (this.desks[i]) continue;
+            const customer = this.findUnregistered();
+            if (!customer) break;
+            customer.beingRegistered = true;
+            this.desks[i] = {
+              customer,
+              started: this.clock,
+              ends: this.clock + this.exponential(this.config.preMean),
+            };
+          }
+        }
+
+        accrue(to) {
+          if (to <= this.clock) return;
+          const q = this.queue.length;
+          if (q > this.maxQueue) this.maxQueue = q;
+          while (this.histNext <= to) {
+            if (this.histNext >= this.clock) {
+              this.history.push({ t: this.histNext, q, w: this.servers.length });
+            }
+            this.histNext += DAY_SAMPLE;
+          }
+          this.clock = to;
+        }
+
+        nextEventTime() {
+          let t = Math.min(this.nextArrival, this.boundaryDue);
+          for (const slot of this.servers) if (slot && slot.ends < t) t = slot.ends;
+          for (const desk of this.desks) if (desk && desk.ends < t) t = desk.ends;
+          return t;
+        }
+
+        processEvents() {
+          const t = this.clock;
+
+          // 窓口のサービス完了
+          for (let i = 0; i < this.servers.length; i += 1) {
+            const slot = this.servers[i];
+            if (slot && slot.ends <= t) {
+              this.servers[i] = null;
+              this.served += 1;
+              if (slot.pre) this.servedPre += 1;
+            }
+          }
+
+          // 先行受付の完了
+          for (let i = 0; i < this.desks.length; i += 1) {
+            const desk = this.desks[i];
+            if (desk && desk.ends <= t) {
+              desk.customer.beingRegistered = false;
+              if (!desk.customer.gone) {
+                desk.customer.registered = true;
+                this.registered += 1;
+              }
+              this.desks[i] = null;
+            }
+          }
+
+          // 時間帯の切り替わり
+          if (t >= this.boundaryDue) {
+            this.applyWindows();
+            this.boundaryDue =
+              t >= DAY_CLOSE ? Infinity : Math.min((Math.floor(t / 60) + 1) * 60, DAY_CLOSE);
+          }
+
+          // 到着
+          if (this.nextArrival <= t) {
+            this.arrived += 1;
+            this.queue.push({
+              id: this.nextId++,
+              arrived: t,
+              registered: false,
+              beingRegistered: false,
+              gone: false,
+            });
+            this.nextArrival = this.arrivalAfter(t);
+          }
+
+          this.dispatch();
+          this.assignDesks();
+        }
+
+        finished() {
+          if (this.finishedAt !== null) return true;
+          if (
+            this.clock >= DAY_CLOSE &&
+            this.queue.length === 0 &&
+            this.busyCount() === 0
+          ) {
+            this.finishedAt = this.clock;
+            return true;
+          }
+          return false;
+        }
+
+        advance(dt) {
+          if (this.finishedAt !== null || !(dt > 0)) return;
+          const target = this.clock + dt;
+          let guard = 0;
+          for (;;) {
+            const eventAt = this.nextEventTime();
+            if (!Number.isFinite(eventAt) || eventAt > target) break;
+            guard += 1;
+            if (guard > MAX_EVENTS_PER_STEP) break;
+            this.accrue(eventAt);
+            this.processEvents();
+            if (this.finished()) return;
+          }
+          this.accrue(target);
+          this.finished();
+        }
+
+        /** 係員の人数が変わったら、はみ出た机の作業は取り消す。 */
+        syncDesks() {
+          const want = this.config.preStaff;
+          if (this.desks.length === want) return;
+          if (want < this.desks.length) {
+            for (const desk of this.desks.splice(want)) {
+              if (desk) desk.customer.beingRegistered = false;
+            }
+          } else {
+            while (this.desks.length < want) this.desks.push(null);
+          }
+        }
+
+        stats() {
+          // まだ並んでいる人のうち、先頭がいちばん長く待っている。
+          const waiting =
+            this.queue.length > 0
+              ? Math.max(0, this.clock - this.queue.at(0).arrived)
+              : 0;
+          return {
+            clock: this.clock,
+            queueLen: this.queue.length,
+            busy: this.busyCount(),
+            windows: this.servers.length,
+            arrived: this.arrived,
+            served: this.served,
+            registered: this.registered,
+            avgWait: this.waitN > 0 ? this.waitSum / this.waitN : 0,
+            avgWaitPost: this.waitNPost > 0 ? this.waitSumPost / this.waitNPost : 0,
+            maxWait: Math.max(this.waitMax, waiting),
+            maxQueue: this.maxQueue,
+            preRate: this.served > 0 ? this.servedPre / this.served : 0,
+            finishedAt: this.finishedAt,
+          };
+        }
+      }
+
+      // ---------- 設定 ----------
+
+      const dayConfig = {
+        arrivals: { 10: 30, 11: 90, 12: 180, 13: 120, 14: 80, 15: 60 },
+        windows: { 12: 6, 13: 5, 14: 4, 15: 3 },
+        preStaff: 3,
+        preMean: 1.5,
+        shortService: 1,
+        normalService: 4,
+        preAfterOpen: true,
+      };
+
+      const daySim = new DaySim(dayConfig);
+      let dayRunning = true;
+      let daySpeed = 5;
+      const dayDots = new Map();
+      const dayPulses = [];
+      let dayReadoutsAt = 0;
+
+      const dui = {
+        staff: el("d-staff"), staffOut: el("d-staff-out"), staffCap: el("d-staff-cap"),
+        pre: el("d-pre"), preOut: el("d-pre-out"), after: el("d-after"),
+        normal: el("d-normal"), normalOut: el("d-normal-out"),
+        short: el("d-short"), shortOut: el("d-short-out"), gain: el("d-gain"),
+        speed: el("d-speed"), speedOut: el("d-speed-out"),
+        toggle: el("d-toggle"), reset: el("d-reset"),
+        clock: el("d-clock"), clockSub: el("d-clock-sub"),
+        phase: el("d-phase"), maxq: el("d-maxq"), maxw: el("d-maxw"),
+        avgw: el("d-avgw"), avgwp: el("d-avgwp"),
+        prerate: el("d-prerate"), counts: el("d-counts"),
+        finish: el("d-finish"), note: el("d-note"), total: el("d-total"),
+        sched: el("d-sched"), scene: el("d-scene"), chart: el("d-chart"),
+        result: el("d-result"),
+      };
+
+      /** 分（0時からの通算）を 12:34 の形にする。 */
+      function formatTime(minutes) {
+        const total = Math.max(0, Math.round(minutes));
+        return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+      }
+
+      // ---------- 時間帯ごとの設定 UI ----------
+
+      const dayFields = { arrivals: {}, windows: {} };
+
+      for (const hour of DAY_HOURS) {
+        const open = hour >= 12;
+        const col = document.createElement("div");
+        col.className = "sched-col";
+        col.dataset.open = String(open);
+        col.innerHTML =
+          `<span class="sched-hour">${hour}:00<em>${open ? "営業" : "開店前"}</em></span>` +
+          `<label class="sched-field"><span>到着</span>` +
+          `<output id="d-arr-${hour}-out"></output>` +
+          `<input id="d-arr-${hour}" type="range" min="0" max="400" step="10"></label>` +
+          (open
+            ? `<label class="sched-field"><span>窓口</span>` +
+              `<output id="d-win-${hour}-out"></output>` +
+              `<input id="d-win-${hour}" type="range" min="1" max="12" step="1"></label>`
+            : `<div class="sched-field closed"><span>窓口</span><span>閉（行列のみ）</span></div>`);
+        dui.sched.appendChild(col);
+
+        const arrival = el(`d-arr-${hour}`);
+        arrival.value = String(dayConfig.arrivals[hour]);
+        dayFields.arrivals[hour] = { input: arrival, out: el(`d-arr-${hour}-out`) };
+        arrival.addEventListener("input", pushDayConfig);
+
+        if (open) {
+          const windows = el(`d-win-${hour}`);
+          windows.value = String(dayConfig.windows[hour]);
+          dayFields.windows[hour] = { input: windows, out: el(`d-win-${hour}-out`) };
+          windows.addEventListener("input", pushDayConfig);
+        }
+      }
+
+      function pushDayConfig() {
+        for (const hour of DAY_HOURS) {
+          dayConfig.arrivals[hour] = Number(dayFields.arrivals[hour].input.value);
+          if (dayFields.windows[hour]) {
+            dayConfig.windows[hour] = Number(dayFields.windows[hour].input.value);
+          }
+        }
+        dayConfig.preStaff = Number(dui.staff.value);
+        dayConfig.preMean = Number(dui.pre.value);
+        dayConfig.normalService = Number(dui.normal.value);
+        dayConfig.shortService = Number(dui.short.value);
+        dayConfig.preAfterOpen = dui.after.checked;
+        daySim.syncDesks();
+        daySim.applyWindows();
+        dayReadoutsAt = 0;
+      }
+
+      for (const input of [dui.staff, dui.pre, dui.normal, dui.short]) {
+        input.addEventListener("input", pushDayConfig);
+      }
+      dui.after.addEventListener("change", pushDayConfig);
+
+      dui.speed.addEventListener("input", () => {
+        daySpeed = Number(dui.speed.value);
+        setValue(dui.speedOut, daySpeed.toFixed(1), "分/秒");
+      });
+
+      dui.toggle.addEventListener("click", () => {
+        dayRunning = !dayRunning;
+        dui.toggle.textContent = dayRunning ? "一時停止" : "再開";
+      });
+
+      dui.reset.addEventListener("click", () => {
+        daySim.reset();
+        dayDots.clear();
+        dayPulses.length = 0;
+        dayRunning = true;
+        dui.toggle.textContent = "一時停止";
+        dayReadoutsAt = 0;
+      });
+
+      // ---------- 当日の指標 ----------
+
+      function renderDayReadouts() {
+        const s = daySim.stats();
+
+        setValue(dui.staffOut, String(dayConfig.preStaff), "人");
+        dui.staffCap.textContent = String(
+          Math.round((dayConfig.preStaff * 60) / dayConfig.preMean)
+        );
+        setValue(dui.preOut, dayConfig.preMean.toFixed(1), "分");
+        setValue(dui.normalOut, dayConfig.normalService.toFixed(1), "分");
+        setValue(dui.shortOut, dayConfig.shortService.toFixed(1), "分");
+        dui.gain.textContent = (dayConfig.normalService / dayConfig.shortService).toFixed(1);
+
+        let total = 0;
+        for (const hour of DAY_HOURS) {
+          const field = dayFields.arrivals[hour];
+          field.out.textContent = String(dayConfig.arrivals[hour]);
+          total += dayConfig.arrivals[hour];
+          if (dayFields.windows[hour]) {
+            dayFields.windows[hour].out.textContent = String(dayConfig.windows[hour]);
+          }
+        }
+        dui.total.textContent = `合計 ${total} 人が来店する想定`;
+
+        dui.clock.textContent = formatTime(s.clock);
+        if (s.finishedAt !== null) {
+          dui.clockSub.textContent = "全員さばけました";
+          dui.phase.textContent = "終了";
+        } else if (s.clock < DAY_OPEN) {
+          dui.clockSub.textContent = `開店まで ${Math.ceil(DAY_OPEN - s.clock)} 分`;
+          dui.phase.textContent = "開店前";
+        } else if (s.clock < DAY_CLOSE) {
+          dui.clockSub.textContent = `窓口 ${s.windows} · 受付終了まで ${Math.ceil(
+            DAY_CLOSE - s.clock
+          )} 分`;
+          dui.phase.textContent = "営業中";
+        } else {
+          dui.clockSub.textContent = `残り ${s.queueLen + s.busy} 人をさばいています`;
+          dui.phase.textContent = "受付終了後";
+        }
+
+        setValue(dui.maxq, String(s.maxQueue), "人");
+        setValue(dui.maxw, fixed(s.maxWait, 1), "分");
+        setValue(dui.avgw, fixed(s.avgWait, 1), "分");
+        setValue(dui.avgwp, fixed(s.avgWaitPost, 1), "分");
+        setValue(dui.prerate, String(Math.round(s.preRate * 100)), "%");
+        dui.counts.textContent = `${s.arrived} / ${s.served}`;
+        dui.finish.textContent =
+          s.finishedAt === null ? "—" : formatTime(s.finishedAt);
+
+        const over = s.finishedAt !== null ? s.finishedAt - DAY_CLOSE : 0;
+        if (s.finishedAt !== null) {
+          dui.result.dataset.state = over > 30 ? "unstable" : "";
+          dui.note.textContent =
+            over > 0.5
+              ? `受付終了から ${Math.round(over)} 分あふれました。` +
+                `先行受付を増やすか、窓口を増やすと縮みます。`
+              : "受付終了と同時にさばき終えました。";
+        } else {
+          delete dui.result.dataset.state;
+          dui.note.textContent =
+            dayConfig.preStaff === 0
+              ? "先行受付なし。全員が通常のサービス時間で窓口を通ります。"
+              : `先行受付 ${s.registered} 人完了。済んだ客は窓口を ` +
+                `${dayConfig.shortService.toFixed(1)} 分で通過します。`;
+        }
+      }
+
+      // ---------- 当日のアニメーション ----------
+
+      /** 先行受付の机を行列の上に並べる。 */
+      function deskLayout(layout, count) {
+        if (count <= 0) return [];
+        const span = layout.queueRight - layout.queueLeft;
+        const w = Math.min(84, Math.max(44, span / count - 8));
+        const gap = count > 1 ? Math.min(w + 10, (span - w) / (count - 1)) : 0;
+        const boxes = [];
+        for (let i = 0; i < count; i += 1) {
+          const y = Math.max(layout.topY + 14, layout.centerY - 94);
+          boxes.push({ x: layout.queueLeft + gap * i, y, w, h: 19 });
+        }
+        return boxes;
+      }
+
+      function updateDayDots(layout, dt) {
+        const queueSpan = Math.max(40, layout.queueRight - layout.queueLeft);
+        const maxSlots = Math.max(1, Math.floor(queueSpan / (layout.dotR * 1.9)));
+        const drawn = Math.min(daySim.queue.length, maxSlots);
+        const gap =
+          drawn > 1 ? Math.min(layout.dotR * 2.8, queueSpan / (drawn - 1)) : 0;
+        const seen = new Set();
+
+        const touch = (customer, target) => {
+          seen.add(customer.id);
+          let dot = dayDots.get(customer.id);
+          if (!dot) {
+            dot = {
+              x: layout.entranceX - 22 - Math.random() * 40,
+              y: layout.centerY + jitter(customer.id) * 6,
+              state: "arriving",
+              wait: 0,
+              alpha: 0,
+              pop: 0,
+            };
+            dayDots.set(customer.id, dot);
+            dayPulses.push({
+              x: layout.entranceX,
+              y: layout.centerY,
+              t: 0,
+              kind: "arrive",
+            });
+          }
+          if (dot.state === "queue" && target.state === "service") dot.pop = 1;
+          if (!dot.registered && target.registered) dot.pop = Math.max(dot.pop, 0.8);
+          dot.target = target;
+          dot.wait = target.wait;
+          dot.registered = target.registered;
+          dot.beingRegistered = target.beingRegistered;
+          if (dot.state === "arriving") {
+            if (Math.abs(dot.x - target.x) < layout.dotR * 1.5) dot.state = target.state;
+          } else {
+            dot.state = target.state;
+          }
+        };
+
+        for (let i = 0; i < drawn; i += 1) {
+          const customer = daySim.queue.at(i);
+          touch(customer, {
+            x: layout.queueRight - gap * i,
+            y: layout.centerY + jitter(customer.id) * Math.min(3, layout.dotR * 0.3),
+            state: "queue",
+            wait: Math.max(0, daySim.clock - customer.arrived),
+            registered: customer.registered,
+            beingRegistered: customer.beingRegistered,
+          });
+        }
+
+        for (let i = 0; i < daySim.servers.length; i += 1) {
+          const slot = daySim.servers[i];
+          if (!slot) continue;
+          touch(slot.customer, {
+            x: layout.winLeft + layout.dotR + 7,
+            y: layout.rowY(i),
+            state: "service",
+            wait: slot.wait,
+            registered: slot.pre,
+            beingRegistered: false,
+          });
+        }
+
+        for (const [id, dot] of dayDots) {
+          if (!seen.has(id) && dot.state !== "leaving") {
+            if (dot.state === "service") {
+              dot.state = "leaving";
+              dot.target = { x: layout.exitX, y: dot.y };
+              dayPulses.push({ x: dot.x, y: dot.y, t: 0, kind: "done" });
+            } else {
+              dayDots.delete(id);
+              continue;
+            }
+          }
+
+          if (dot.state === "leaving") {
+            dot.x += 190 * dt;
+            dot.alpha = Math.max(0, dot.alpha - dt * 1.4);
+            if (dot.alpha <= 0.01 || dot.x > layout.exitX) dayDots.delete(id);
+            continue;
+          }
+
+          const target = dot.target;
+          if (!target) continue;
+          const k = dot.state === "arriving" ? 4.5 : dot.state === "service" ? 9 : 7;
+          const ease = reducedMotion ? 1 : 1 - Math.exp(-k * dt);
+          const aimY =
+            dot.state === "arriving" && dot.x < layout.queueRight - 12
+              ? layout.centerY
+              : target.y;
+          dot.x += (target.x - dot.x) * ease;
+          dot.y += (aimY - dot.y) * ease;
+          dot.alpha = Math.min(1, dot.alpha + dt * 3);
+          dot.pop = Math.max(0, dot.pop - dt * 3);
+        }
+
+        for (let i = dayPulses.length - 1; i >= 0; i -= 1) {
+          dayPulses[i].t += dt;
+          if (dayPulses[i].t > 0.7) dayPulses.splice(i, 1);
+        }
+
+        return { overflow: daySim.queue.length - drawn, gap };
+      }
+
+      function drawDayScene(dt) {
+        const { ctx, width, height } = sizeCanvas(dui.scene);
+        ctx.clearRect(0, 0, width, height);
+
+        const open = daySim.clock >= DAY_OPEN;
+        // 開店前も、これから開く窓口の枠は見せておく。
+        const shown = Math.max(1, daySim.servers.length || dayConfig.windows[12]);
+        const layout = sceneLayout(width, height, shown);
+        const { overflow, gap } = updateDayDots(layout, dt);
+        const labelFont = `500 10.5px ${FONT_UI}`;
+        const desks = deskLayout(layout, daySim.desks.length);
+
+        // 行列のレール
+        ctx.strokeStyle = rgba(palette.line, 0.85);
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(layout.entranceX, layout.centerY);
+        ctx.lineTo(layout.queueRight + 6, layout.centerY);
+        ctx.stroke();
+        if (open) {
+          for (let i = 0; i < daySim.servers.length; i += 1) {
+            ctx.beginPath();
+            ctx.moveTo(layout.queueRight + 8, layout.centerY);
+            ctx.lineTo(layout.winLeft - 6, layout.rowY(i));
+            ctx.stroke();
+          }
+        }
+        ctx.setLineDash([]);
+
+        // 入口
+        ctx.strokeStyle = rgba(palette.accent, 0.85);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(layout.entranceX, layout.centerY - 26);
+        ctx.lineTo(layout.entranceX, layout.centerY + 26);
+        ctx.stroke();
+
+        ctx.font = labelFont;
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = rgba(palette.muted, 1);
+        ctx.textAlign = "center";
+        ctx.fillText("到着", layout.entranceX, layout.centerY - 36);
+        ctx.textAlign = "left";
+        const hour = Math.floor(daySim.clock / 60);
+        ctx.fillText(
+          `${hour}時台 ${dayConfig.arrivals[hour] ?? 0}人/時`,
+          layout.pad,
+          layout.botY + 14
+        );
+        ctx.textAlign = "right";
+        ctx.fillText("退出 →", width - layout.pad, layout.botY + 14);
+
+        // 待ち行列の見出し
+        ctx.textAlign = "center";
+        const queueMid = (layout.queueLeft + layout.queueRight) / 2;
+        ctx.fillStyle = rgba(palette.muted, 1);
+        ctx.fillText(
+          open ? "待ち行列" : "オープン前待ち行列",
+          queueMid,
+          layout.centerY - 46
+        );
+        ctx.font = `600 14px ${FONT_UI}`;
+        ctx.fillStyle = rgba(palette.fg, 1);
+        ctx.fillText(`${daySim.queue.length}人`, queueMid, layout.centerY - 29);
+
+        if (overflow > 0) {
+          ctx.font = labelFont;
+          ctx.textAlign = "left";
+          ctx.fillStyle = rgba(palette.muted, 1);
+          ctx.fillText(`他 ${overflow} 人`, layout.pad + 2, layout.centerY + 4);
+        }
+
+        // 先行受付の机
+        if (desks.length > 0) {
+          ctx.font = `500 9.5px ${FONT_UI}`;
+          for (let i = 0; i < desks.length; i += 1) {
+            const box = desks[i];
+            const desk = daySim.desks[i];
+            roundRect(ctx, box.x, box.y, box.w, box.h, 5);
+            ctx.fillStyle = desk ? rgba(palette.ok, 0.18) : rgba(palette.surface2, 1);
+            ctx.fill();
+            ctx.strokeStyle = desk ? rgba(palette.ok, 0.7) : rgba(palette.line, 0.9);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = rgba(desk ? palette.ok : palette.muted, 1);
+            ctx.fillText(desk ? "受付中" : "受付", box.x + box.w / 2, box.y + box.h / 2);
+            ctx.textBaseline = "alphabetic";
+
+            // 受付している相手へ線を引く
+            if (desk) {
+              const dot = dayDots.get(desk.customer.id);
+              if (dot) {
+                ctx.strokeStyle = rgba(palette.ok, 0.45);
+                ctx.setLineDash([2, 3]);
+                ctx.beginPath();
+                ctx.moveTo(box.x + box.w / 2, box.y + box.h);
+                ctx.lineTo(dot.x, dot.y - layout.dotR);
+                ctx.stroke();
+                ctx.setLineDash([]);
+              }
+            }
+          }
+          ctx.font = labelFont;
+          ctx.textAlign = "left";
+          ctx.fillStyle = rgba(palette.muted, 1);
+          ctx.fillText("先行受付", layout.queueLeft, desks[0].y - 6);
+        }
+
+        // 窓口
+        ctx.font = labelFont;
+        ctx.textAlign = "center";
+        ctx.fillStyle = rgba(palette.muted, 1);
+        ctx.fillText(
+          open ? `窓口 ${daySim.servers.length}` : "窓口（準備中）",
+          (layout.winLeft + layout.winRight) / 2,
+          layout.blockTop - 9
+        );
+
+        for (let i = 0; i < shown; i += 1) {
+          const slot = open ? daySim.servers[i] : null;
+          const live = open && i < daySim.servers.length;
+          const y = layout.rowY(i);
+          const top = y - layout.boxH / 2;
+          roundRect(ctx, layout.winLeft, top, layout.winW, layout.boxH, 7);
+          ctx.fillStyle = slot
+            ? rgba(slot.pre ? palette.ok : palette.accent, 0.16)
+            : rgba(palette.surface2, live ? 1 : 0.4);
+          ctx.fill();
+          if (!live) ctx.setLineDash([3, 3]);
+          ctx.strokeStyle = slot
+            ? rgba(slot.pre ? palette.ok : palette.accent, 0.6)
+            : rgba(palette.line, live ? 0.9 : 0.6);
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          if (layout.boxH >= 18) {
+            const shift = layout.boxH >= 26 ? 4 : 0;
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "right";
+            ctx.fillStyle = rgba(palette.muted, 1);
+            ctx.fillText(
+              slot
+                ? `残り${fixed(Math.max(0, slot.ends - daySim.clock), 1)}分`
+                : live
+                ? "空き"
+                : "準備中",
+              layout.winRight - 8,
+              y - shift
+            );
+            ctx.textAlign = "left";
+            ctx.fillStyle = rgba(palette.fg, live ? 0.75 : 0.4);
+            ctx.fillText(`${i + 1}`, layout.winLeft + layout.dotR * 2 + 14, y - shift);
+            ctx.textBaseline = "alphabetic";
+          }
+
+          if (slot && layout.boxH >= 22) {
+            const total = Math.max(1e-9, slot.ends - slot.started);
+            const progress = clamp((daySim.clock - slot.started) / total, 0, 1);
+            const barLeft = layout.winLeft + 10;
+            const barRight = layout.winRight - 10;
+            const barY = top + layout.boxH - 8;
+            ctx.lineCap = "round";
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = rgba(palette.line, 1);
+            ctx.beginPath();
+            ctx.moveTo(barLeft, barY);
+            ctx.lineTo(barRight, barY);
+            ctx.stroke();
+            ctx.strokeStyle = rgba(slot.pre ? palette.ok : palette.accent, 1);
+            ctx.beginPath();
+            ctx.moveTo(barLeft, barY);
+            ctx.lineTo(barLeft + (barRight - barLeft) * progress, barY);
+            ctx.stroke();
+            ctx.lineCap = "butt";
+          }
+        }
+
+        // 開店までのカウントダウン
+        if (!open) {
+          ctx.textAlign = "center";
+          ctx.font = `650 15px ${FONT_UI}`;
+          ctx.fillStyle = rgba(palette.accent, 0.9);
+          ctx.fillText(
+            `12:00 オープンまで ${Math.ceil(DAY_OPEN - daySim.clock)} 分`,
+            (layout.winLeft + layout.winRight) / 2,
+            layout.blockBottom + 22
+          );
+        }
+
+        for (const pulse of dayPulses) {
+          const t = pulse.t / 0.7;
+          const color = pulse.kind === "arrive" ? palette.accent : palette.ok;
+          ctx.strokeStyle = rgba(color, (1 - t) * 0.5);
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(pulse.x, pulse.y, 5 + t * 18, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // 客。先行受付が済んだ人は緑の縁取り。
+        for (const dot of dayDots.values()) {
+          const r = layout.dotR * (1 + dot.pop * 0.25);
+          const color =
+            dot.state === "leaving"
+              ? palette.ok
+              : waitColor(dot.wait, dayConfig.normalService);
+          drawPerson(ctx, dot.x, dot.y, r, color, dot.alpha, dot.registered ? palette.ok : null);
+        }
+
+        drawWaitLabels(ctx, layout, gap, dayConfig.normalService, dayDots);
+      }
+
+      // ---------- 当日のグラフ ----------
+
+      function drawDayChart() {
+        const { ctx, width, height } = sizeCanvas(dui.chart);
+        ctx.clearRect(0, 0, width, height);
+
+        const left = 32;
+        const right = width - 26;
+        const top = 10;
+        const bottom = height - 16;
+        const history = daySim.history;
+        const endT = Math.max(DAY_CLOSE, daySim.clock, DAY_CLOSE + 30);
+
+        let peak = 1;
+        for (const point of history) if (point.q > peak) peak = point.q;
+        const yMax = Math.max(4, Math.ceil(peak * 1.2));
+        const wMax = 12;
+
+        const xAt = (t) =>
+          left + ((right - left) * (t - DAY_FROM)) / Math.max(1, endT - DAY_FROM);
+        const yAt = (v) => bottom - (bottom - top) * (v / yMax);
+        const yWin = (v) => bottom - (bottom - top) * (v / wMax);
+
+        // 横の目盛り
+        ctx.strokeStyle = rgba(palette.lineSoft, 1);
+        ctx.lineWidth = 1;
+        ctx.font = `500 9.5px ${FONT_NUM}`;
+        ctx.fillStyle = rgba(palette.muted, 1);
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        for (const value of [0, yMax / 2, yMax]) {
+          const y = yAt(value);
+          ctx.beginPath();
+          ctx.moveTo(left, y);
+          ctx.lineTo(right, y);
+          ctx.stroke();
+          ctx.fillText(String(Math.round(value)), left - 6, y);
+        }
+
+        // 時刻の目盛りと節目
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        ctx.font = `500 9px ${FONT_UI}`;
+        for (let t = DAY_FROM; t <= endT; t += 60) {
+          const x = xAt(t);
+          ctx.strokeStyle = rgba(palette.lineSoft, 0.8);
+          ctx.beginPath();
+          ctx.moveTo(x, top);
+          ctx.lineTo(x, bottom);
+          ctx.stroke();
+          ctx.fillStyle = rgba(palette.muted, 1);
+          ctx.fillText(formatTime(t), x, bottom + 11);
+        }
+        for (const [t, label, color] of [
+          [DAY_OPEN, "開店", palette.accent],
+          [DAY_CLOSE, "受付終了", palette.crit],
+        ]) {
+          const x = xAt(t);
+          ctx.setLineDash([4, 3]);
+          ctx.strokeStyle = rgba(color, 0.8);
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(x, top);
+          ctx.lineTo(x, bottom);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = rgba(color, 1);
+          ctx.fillText(label, x, top - 1);
+        }
+
+        // 窓口数の階段
+        if (history.length > 1) {
+          ctx.strokeStyle = rgba(palette.muted, 0.75);
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          let prev = null;
+          for (const point of history) {
+            const x = xAt(point.t);
+            const y = yWin(point.w);
+            if (prev === null) ctx.moveTo(x, y);
+            else {
+              ctx.lineTo(x, prev);
+              ctx.lineTo(x, y);
+            }
+            prev = y;
+          }
+          ctx.stroke();
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.font = `500 9px ${FONT_UI}`;
+          ctx.fillStyle = rgba(palette.muted, 1);
+          ctx.fillText("窓口", right + 4, yWin(daySim.servers.length));
+        }
+
+        // 待ち人数
+        if (history.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(xAt(history[0].t), yAt(history[0].q));
+          for (const point of history) ctx.lineTo(xAt(point.t), yAt(point.q));
+          ctx.strokeStyle = rgba(palette.accent, 1);
+          ctx.lineWidth = 1.7;
+          ctx.stroke();
+          ctx.lineTo(xAt(history[history.length - 1].t), bottom);
+          ctx.lineTo(xAt(history[0].t), bottom);
+          ctx.closePath();
+          ctx.fillStyle = rgba(palette.accent, 0.14);
+          ctx.fill();
+        }
+
+        // いまの時刻
+        if (daySim.finishedAt === null) {
+          const x = xAt(daySim.clock);
+          ctx.strokeStyle = rgba(palette.fg, 0.5);
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x, top);
+          ctx.lineTo(x, bottom);
+          ctx.stroke();
+        }
+      }
+
+      // ---------- 歩行ボトルネック：0.6m格子、0.1秒刻み。時計は分。 ----------
+      class BottleneckSim {
+        constructor(config) {
+          this.config = { ...config };
+          this.random = makeRng(42);
+          this.motionRandom = makeRng(314);
+          this.clock = 0;
+          this.remainder = 0;
+          this.people = [];
+          this.pending = new Queue();
+          this.arrived = 0;
+          this.exited = 0;
+          this.excess = 0;
+          this.travel = 0;
+          this.departures = [];
+          this.history = [{ t: 0, q: 0 }];
+          this.hazard = -Math.log(1 - this.random());
+        }
+        allowed(x, lane) {
+          const c = this.config;
+          const start = Math.floor((c.width - c.neck) / 2);
+          return lane >= 0 && lane < c.width &&
+            (x < 30 || x >= 40 || (lane >= start && lane < start + c.neck));
+        }
+        advance(minutes) {
+          const step = 1 / 600;
+          this.remainder += minutes;
+          while (this.remainder + 1e-12 >= step) {
+            this.remainder -= step;
+            this.tick(step);
+          }
+        }
+        tick(dt) {
+          const c = this.config;
+          this.clock += dt;
+          this.hazard -= c.arrival * dt;
+          while (this.hazard <= 0) {
+            this.arrived++;
+            const person = { x: 0, lane: 0, credit: 0, born: this.clock,
+              phone: this.random() * 100 < c.phone, pause: 0, blocked: false };
+            if (this.pending.length < 10000) this.pending.push(person);
+            else this.excess++;
+            this.hazard += -Math.log(Math.max(1e-12, 1 - this.random()));
+          }
+          const occupied = new Set(this.people.map(p => p.x * 4 + p.lane));
+          // 下流から更新。同じ位置では交互に合流優先を変える。
+          const parity = Math.floor(this.clock * 600) % 2 ? 1 : -1;
+          this.people.sort((a, b) => b.x - a.x || parity * (a.lane - b.lane));
+          for (const p of this.people) {
+            p.blocked = false;
+            if (p.pause > 0) { p.pause -= dt; continue; }
+            if (p.phone && this.motionRandom() < dt * 2) {
+              p.pause = (1 + 2 * this.motionRandom()) / 60;
+              continue;
+            }
+            p.credit = Math.min(1, p.credit + (p.phone ? c.slow : c.walk) * 60 * dt / 0.6);
+            if (p.credit < 1) continue;
+            if (p.x === 59) {
+              occupied.delete(p.x * 4 + p.lane);
+              p.x = 60;
+              this.exited++;
+              this.travel += this.clock - p.born;
+              this.departures.push(this.clock);
+              continue;
+            }
+            let options = [{ x: p.x + 1, lane: p.lane }];
+            const start = Math.floor((c.width - c.neck) / 2);
+            const target = Math.max(start, Math.min(start + c.neck - 1, p.lane));
+            if (p.x >= 26 && p.x < 30 && target !== p.lane) {
+              const lane = p.lane + Math.sign(target - p.lane);
+              options.unshift({ x: p.x + 1, lane });
+              options.push({ x: p.x, lane });
+            } else if (c.pass) {
+              for (const delta of [parity, -parity]) options.push({ x: p.x + 1, lane: p.lane + delta });
+            }
+            const next = options.find(n => this.allowed(n.x, n.lane) && !occupied.has(n.x * 4 + n.lane));
+            if (next) {
+              occupied.delete(p.x * 4 + p.lane);
+              p.x = next.x; p.lane = next.lane; p.credit = 0;
+              occupied.add(p.x * 4 + p.lane);
+            } else p.blocked = true;
+          }
+          this.people = this.people.filter(p => p.x < 60);
+          for (let lane = 0; lane < c.width && this.pending.length; lane++) {
+            if (!occupied.has(lane)) {
+              const p = this.pending.shift();
+              p.lane = lane;
+              this.people.push(p);
+            }
+          }
+          this.departures = this.departures.filter(t => t > this.clock - 1);
+          if (this.clock - this.history[this.history.length - 1].t >= 1 / 60) {
+            this.history.push({ t: this.clock, q: this.people.length + this.pending.length });
+            if (this.history.length > 301) this.history.shift();
+          }
+        }
+      }
+
+      const bKeys = ["arrival", "phone", "walk", "slow", "width", "neck", "speed"];
+      let bottleneckSim;
+      let bottleneckRunning = true;
+      function resetBottleneck() {
+        el("b-neck").max = el("b-width").value;
+        el("b-neck").value = Math.min(+el("b-neck").value, +el("b-width").value);
+        const config = { pass: el("b-pass").checked };
+        for (const key of bKeys) {
+          const input = el("b-" + key);
+          config[key] = +input.value;
+          el("b-" + key + "-out").textContent = input.value + " " + input.dataset.unit;
+        }
+        bottleneckSim = new BottleneckSim(config);
+      }
+      for (const key of bKeys) el("b-" + key).addEventListener("input", () => {
+        if (key === "speed") el("b-speed-out").textContent = el("b-speed").value + " 倍";
+        else resetBottleneck();
+      });
+      el("b-pass").addEventListener("change", resetBottleneck);
+      el("b-reset").addEventListener("click", resetBottleneck);
+      el("b-toggle").addEventListener("click", () => {
+        bottleneckRunning = !bottleneckRunning;
+        el("b-toggle").textContent = bottleneckRunning ? "一時停止" : "再開";
+      });
+      document.querySelectorAll("[data-b-preset]").forEach(button => button.addEventListener("click", () => {
+        const preset = button.dataset.bPreset;
+        el("b-width").value = 3;
+        el("b-neck").max = 3;
+        el("b-neck").value = ["neck", "both"].includes(preset) ? 1 : 3;
+        el("b-phone").value = ["phone", "both"].includes(preset) ? 30 : 0;
+        el("b-arrival").value = 140;
+        el("b-walk").value = 1.2;
+        el("b-slow").value = 0.4;
+        el("b-pass").checked = true;
+        resetBottleneck();
+      }));
+      resetBottleneck();
+
+      function drawBottleneck() {
+        const sim = bottleneckSim;
+        const { ctx, width, height } = sizeCanvas(el("b-scene"));
+        const style = getComputedStyle(document.documentElement);
+        const color = name => style.getPropertyValue("--" + name).trim();
+        ctx.clearRect(0, 0, width, height);
+        const left = 24, cell = Math.max(1, (width - 48) / 60);
+        const laneHeight = Math.min(42, (height - 130) / sim.config.width);
+        const top = (height - laneHeight * sim.config.width) / 2;
+        for (let x = 0; x < 60; x++) for (let lane = 0; lane < sim.config.width; lane++) {
+          ctx.fillStyle = color(sim.allowed(x, lane) ? "surface-2" : "line");
+          ctx.fillRect(left + x * cell, top + lane * laneHeight, cell + 0.5, laneHeight);
+        }
+        ctx.font = "12px " + FONT_UI;
+        ctx.fillStyle = color("muted");
+        ctx.textAlign = "left";
+        ctx.fillText("入口 →", left, top - 18);
+        ctx.textAlign = "center";
+        ctx.fillText(sim.config.neck < sim.config.width ? "狭窄部（6m）" : "狭窄なし", left + 35 * cell, top - 18);
+        ctx.textAlign = "right";
+        ctx.fillText("→ 出口", width - 24, top - 18);
+        for (const p of sim.people) {
+          const x = left + (p.x + 0.5) * cell, y = top + (p.lane + 0.5) * laneHeight;
+          const radius = Math.max(2, Math.min(cell * 0.43, laneHeight * 0.3));
+          ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = p.phone ? "#9868ce" : color("accent"); ctx.fill();
+          if (p.blocked) { ctx.strokeStyle = color("crit"); ctx.lineWidth = 2; ctx.stroke(); }
+          if (p.phone && cell > 7) { ctx.fillStyle = color("surface"); ctx.fillRect(x, y - 2, 2, 4); }
+        }
+        ctx.textAlign = "left"; ctx.fillStyle = color("muted");
+        ctx.fillText("通路 36m · 幅 " + (sim.config.width * 0.6).toFixed(1) + "m · 入口待機 " + sim.pending.length + "人", left, top + laneHeight * sim.config.width + 28);
+        const seconds = Math.floor(sim.clock * 60);
+        el("b-clock").textContent = Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+        for (const [key, value] of Object.entries({ inside: sim.people.length, outside: sim.pending.length, out: sim.exited,
+          travel: sim.exited ? (sim.travel * 60 / sim.exited).toFixed(1) : "—",
+          flow: sim.clock >= 1 ? sim.departures.length : "—" })) el("b-" + key).textContent = value;
+        el("b-status").textContent = sim.excess ? "待機上限に達したため、追加の " + sim.excess + " 人は計算対象外です。到着人数を減らしてください。" : "到着 " + sim.arrived + " 人 · 赤い輪 " + sim.people.filter(p => p.blocked).length + " 人 · 流出は開始1分後から表示";
+        const chart = sizeCanvas(el("b-chart")), g = chart.ctx;
+        g.clearRect(0, 0, chart.width, chart.height);
+        const max = Math.max(10, ...sim.history.map(p => p.q));
+        g.font = "11px " + FONT_UI; g.fillStyle = color("muted");
+        g.fillText(max + "人", 0, 12); g.fillText("0", 0, chart.height - 15);
+        const from = Math.max(0, sim.clock - 5), span = Math.max(1, sim.clock - from);
+        g.beginPath();
+        sim.history.forEach((p, i) => {
+          const x = 40 + (p.t - from) / span * (chart.width - 48), y = chart.height - 25 - p.q / max * (chart.height - 40);
+          if (i) g.lineTo(x, y); else g.moveTo(x, y);
+        });
+        g.strokeStyle = color("accent"); g.lineWidth = 2; g.stroke();
+        g.fillText(from.toFixed(1) + "分", 40, chart.height - 2);
+        g.textAlign = "right"; g.fillText((from + span).toFixed(1) + "分", chart.width - 8, chart.height - 2);
+      }
+
+      // ---------- タブ ----------
+
+      const tabs = [
+        { key: "steady", button: el("tab-steady"), panel: el("panel-steady") },
+        { key: "day", button: el("tab-day"), panel: el("panel-day") },
+        { key: "bottleneck", button: el("tab-bottleneck"), panel: el("panel-bottleneck") },
+      ];
+      let activeTab = "steady";
+
+      function selectTab(key) {
+        activeTab = key;
+        for (const tab of tabs) {
+          const on = tab.key === key;
+          tab.button.setAttribute("aria-selected", String(on));
+          tab.panel.hidden = !on;
+        }
+        // 見えていなかった側の時計が飛ばないように測り直す。
+        lastFrame = performance.now();
+      }
+
+      for (const tab of tabs) {
+        tab.button.addEventListener("click", () => selectTab(tab.key));
+      }
+
+      // ---------- ループ ----------
+
+      function frame(now) {
+        // 1フレームあたりの進み幅。タブ復帰などで飛んだときのために上限を置く。
+        const dt = clamp((now - lastFrame) / 1000, 0, 0.05);
+        lastFrame = now;
+
+        if (activeTab === "steady") {
+          if (running) sim.advance(dt * speed);
+          const theory = theoryOf(sim.params);
+          drawScene(dt);
+          drawChart(theory);
+          if (now - readoutsAt > 100) {
+            readoutsAt = now;
+            renderReadouts(theory);
+          }
+        } else if (activeTab === "bottleneck") {
+          if (bottleneckRunning) bottleneckSim.advance(dt * Number(el("b-speed").value) / 60);
+          drawBottleneck();
+        } else {
+          if (dayRunning) daySim.advance(dt * daySpeed);
+          drawDayScene(dt);
+          drawDayChart();
+          if (now - dayReadoutsAt > 100) {
+            dayReadoutsAt = now;
+            renderDayReadouts();
+          }
+        }
+
+        requestAnimationFrame(frame);
+      }
+
+      setValue(ui.speedOut, "1.0", "分/秒");
+      setValue(dui.speedOut, daySpeed.toFixed(1), "分/秒");
+      renderReadouts(theoryOf(sim.params));
+      renderDayReadouts();
+      requestAnimationFrame(frame);
+    </script>
+  </body>
+</html>
