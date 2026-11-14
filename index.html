@@ -969,6 +969,8 @@
           <section class="lesson"><h2>01 / 待ち行列理論とは？</h2><p>人や仕事が到着し、順番を待ち、窓口で処理される仕組みを数学で扱うものです。受付・レジ・サーバーなどで、待ち人数や待ち時間、必要な窓口数を考える助けになります。</p><p>平均到着数が処理能力より少なくても、到着が重なったり、対応に時間がかかったりすると行列ができます。このシミュレーターでは、そのばらつきも観察できます。</p></section>
           <section class="lesson"><h2>02 / 利用率ρ（ロー）とは？</h2>
             <p>窓口の利用率「ρ (ロー)」が待ち行列理論の中心となる数値です。</p>
+            <p><strong>ここでいう「窓口」</strong>は、1人ずつ順番に対応する受付・レジ・入場レーンなどの処理単位です。同時に4人を対応できる独立したレーンがあれば、窓口数は4です。係員が2人いても、2人で1人の客に対応するなら1窓口と数えます。</p>
+            <p><strong>ここでいう「サービス時間」</strong>は、窓口で対応を始めてから、その客への対応が終わるまでの時間です。列に並んでいる待ち時間は含みません。たとえば1人あたり平均2分なら、1窓口の処理能力μは60 ÷ 2 = 30人/時。サービス時間が長くなるほど、処理能力は下がります。</p>
             <ul>
               <li><strong>c = 窓口数</strong>（同時に対応できる窓口の数）</li>
               <li><strong>λ（ラムダ）= 到着数</strong>（1時間あたりに到着する平均人数：人/時）</li>
@@ -984,7 +986,14 @@
             </div><div class="learn-result" id="tutorial-load-card" aria-live="polite">利用率ρ（ロー）<strong id="tutorial-load">0.75（75%）</strong><span id="tutorial-load-formula">90 ÷ (4 × 30) = 0.75</span><p id="tutorial-load-note">到着率は処理能力を下回っています。</p></div></div></div>
           </section>
           <p class="rho-legend">表示色の目安：<span class="rho-badge" data-rho-state="calm">ρ &lt; 0.8：能力に余裕</span><span class="rho-badge" data-rho-state="tight">0.8 ≤ ρ &lt; 1：余裕が小さい</span><span class="rho-badge" data-rho-state="unstable">ρ ≥ 1：安定条件を満たさない</span>。色は負荷の目安で、待ち時間を保証するものではありません。</p>
-          <section class="lesson"><h2>03 / 1に近づくほど、待ち時間は急増する</h2><p>余裕が小さいと、たまたまできた行列を解消する時間がなくなります。下は<strong>1窓口・平均サービス時間1分・ポアソン到着・指数サービス（M/M/1）</strong>の定常理論値です。サービス中の時間を含まない、行列での平均待ち時間を示します。</p>
+          <section class="lesson"><h2>03 / ρが1に近づくと、急激に待ち時間が悪化する</h2>
+            <p>ρが0.8以下でも待ち時間は発生しますが、1に近づくほど急激に長くなります。特に<strong>ρが0.9〜1に近づくにつれて、待ち時間は急激に悪化します。</strong>余裕が小さいと、たまたまできた行列を解消する時間がなくなるためです。</p>
+            <ul>
+              <li><strong>窓口が1個減っただけで急に悪化する。</strong>到着90人/時・1窓口30人/時なら、4窓口ではρ = 0.75ですが、3窓口になるとρ = 1になり、安定条件を満たさなくなります。</li>
+              <li><strong>サービス時間が少し長くなっただけで急に悪化する。</strong>同じ到着90人/時・4窓口でも、平均サービス時間が2分から2分30秒に延びると、μは30人/時から24人/時へ低下し、ρは0.75から約0.94へ上がります。</li>
+            </ul>
+            <p>「ρが0.8以下なら、ほとんど待たない」とは限りません。以下の1窓口の例では、ρ = 0.8でも平均4分待ちます。実際の待ち時間は窓口数・サービス時間・ばらつきによって変わります。</p>
+            <p>下は<strong>1窓口・平均サービス時間1分・ポアソン到着・指数サービス（M/M/1）</strong>の定常理論値です。サービス中の時間を含まない、行列での平均待ち時間を示します。</p>
             <div class="learn-demo"><div><label for="tutorial-rho">利用率ρ：<output id="tutorial-rho-value" for="tutorial-rho">0.75（75%）</output></label><input type="range" id="tutorial-rho" min="0" max="110" step="1" value="75"><p>Wq = ρ ÷ (1 − ρ) × 平均サービス時間<br>この式は 0 ≤ ρ &lt; 1 で使います。</p></div><div class="learn-result" id="tutorial-wait-card" aria-live="polite">平均待ち時間<strong id="tutorial-wait">3.00 分</strong><span id="tutorial-status">安定していても、待ち時間は発生します。</span></div></div>
             <figure class="lesson-visual"><svg id="tutorial-curve" viewBox="0 0 660 340" role="img" aria-labelledby="tutorial-curve-title tutorial-curve-description"><title id="tutorial-curve-title">利用率ρと平均待ち時間</title><desc id="tutorial-curve-description">横軸は利用率ρ、縦軸は平均待ち時間（分）。1窓口、平均サービス時間1分のM/M/1モデルでは、ρが1に近づくほど待ち時間が急増します。</desc><g id="tutorial-curve-drawing"></g></svg><figcaption class="lesson-caption">横軸ρ、縦軸Wq（分）。縦軸は0〜100分で固定。曲線はρ &lt; 1のみで、1に近づくとグラフの上限を超えて伸びます。点は上のスライダーの値です。02とは別の、1窓口の例です。</figcaption></figure>
             <table class="learn-table"><caption>同じ窓口でも、余裕でこれだけ変わる</caption><thead><tr><th scope="col">利用率ρ</th><th scope="col">平均待ち時間</th></tr></thead><tbody><tr><td><span class="rho-badge" data-rho-state="calm">0.50</span></td><td>1分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.80</span></td><td>4分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.90</span></td><td>9分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.95</span></td><td>19分</td></tr><tr><td><span class="rho-badge" data-rho-state="tight">0.99</span></td><td>99分</td></tr></tbody></table><p>複数窓口では数値が変わります。「基本（定常状態）」では窓口数と到着のばらつきも変更できます。</p><button type="button" class="learn-button" data-open-tab="steady">基本のシミュレーションで確かめる →</button>
