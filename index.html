@@ -874,17 +874,51 @@
       .b-presets { display: flex; flex-wrap: wrap; gap: 6px; }
       .b-presets button, .b-actions button { padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); cursor: pointer; }
       .b-actions { display: flex; gap: 8px; }
+
+      .tabs { flex-shrink: 0; }
+      .learn-page { flex: 1; min-height: 0; overflow-y: auto; padding: 24px 20px 56px; }
+      .learn-content { max-width: 1000px; margin: 0 auto; }
+      .learn-hero { padding: 24px 0; }
+      .learn-hero h1 { font-size: clamp(26px, 4vw, 40px); margin: 8px 0 16px; }
+      .learn-hero p { color: var(--muted); max-width: 700px; font-size: 16px; }
+      .learn-kicker { color: var(--accent); font-weight: 700; letter-spacing: .12em; }
+      .menu-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .menu-card, .lesson { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; }
+      .menu-card { display: flex; flex-direction: column; align-items: flex-start; }
+      .menu-card h2, .lesson h2 { margin: 0 0 12px; font-size: 20px; }
+      .menu-card p { flex: 1; color: var(--muted); }
+      .learn-button { border: 1px solid var(--accent); border-radius: 6px; padding: 10px 16px; background: var(--accent-soft); color: var(--fg); font: inherit; cursor: pointer; }
+      .learn-button:focus-visible, .learn-page a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+      .lesson { margin-bottom: 18px; line-height: 1.85; }
+      .lesson p:last-child { margin-bottom: 0; }
+      .lesson a { color: var(--accent); }
+      .learn-formula { padding: 16px; background: var(--surface-2); border-radius: 8px; font-size: 18px; font-weight: 600; }
+      .learn-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center; }
+      .learn-demo input { width: 100%; }
+      .learn-result { padding: 20px; background: var(--accent-soft); border-radius: 8px; }
+      .learn-result strong { display: block; font-size: 28px; }
+      .learn-table { width: 100%; border-collapse: collapse; }
+      .learn-table th, .learn-table td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; }
+      .learn-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+      .learn-flow span { background: var(--surface-2); padding: 14px; border: 1px solid var(--line); border-radius: 8px; }
+      @media (max-width: 640px) {
+        .menu-grid, .learn-demo { grid-template-columns: 1fr; }
+        .learn-page { padding: 16px 12px 40px; }
+        .menu-card, .lesson { padding: 18px; }
+      }
     </style>
   </head>
   <body>
     <div class="shell">
-      <nav class="tabs" role="tablist" aria-label="シミュレーション">
+      <nav class="tabs" role="tablist" aria-label="トップメニューとシミュレーション">
+        <button type="button" class="tab" id="tab-home" role="tab" aria-selected="true" aria-controls="panel-home">トップメニュー</button>
+        <button type="button" class="tab" id="tab-tutorial" role="tab" aria-selected="false" aria-controls="panel-tutorial">チュートリアル</button>
         <button
           type="button"
           class="tab"
           id="tab-steady"
           role="tab"
-          aria-selected="true"
+          aria-selected="false"
           aria-controls="panel-steady"
         >
           基本（定常状態）
@@ -902,7 +936,37 @@
         <button type="button" class="tab" id="tab-bottleneck" role="tab" aria-selected="false" aria-controls="panel-bottleneck">行列ボトルネック</button>
       </nav>
 
-      <div class="app" id="panel-steady" role="tabpanel" aria-labelledby="tab-steady">
+
+      <main class="learn-page" id="panel-home" role="tabpanel" aria-labelledby="tab-home" tabindex="0">
+        <div class="learn-content">
+          <header class="learn-hero"><span class="learn-kicker">QUEUE SIMULATOR</span><h1>行列は、なぜ伸びる？</h1><p>窓口を増やす、到着を分散する、通路を広げる。待ち時間を減らす工夫を、3つのシミュレーションで試してみましょう。</p></header>
+          <div class="menu-grid">
+            <article class="menu-card"><h2>まずは仕組みを知る</h2><p>待ち行列理論と利用率ρを、数式・具体例・操作できる計算例で学びます。</p><button type="button" class="learn-button" data-open-tab="tutorial">チュートリアルを読む →</button></article>
+            <article class="menu-card"><h2>基本（定常状態）</h2><p>到着数・窓口数・ばらつきを変えて、利用率と待ち時間の関係を観察します。</p><button type="button" class="learn-button" data-open-tab="steady">基本を試す →</button></article>
+            <article class="menu-card"><h2>開店日シミュレーション</h2><p>開店前の行列と時間帯ごとの混雑。先行受付と人員配置で、1日の流れを整えます。</p><button type="button" class="learn-button" data-open-tab="day">開店日を試す →</button></article>
+            <article class="menu-card"><h2>行列ボトルネック</h2><p>窓口だけでは解決しない混雑。遅い歩行者や狭い通路が流れを制限する様子を見ます。</p><button type="button" class="learn-button" data-open-tab="bottleneck">通路を試す →</button></article>
+          </div>
+        </div>
+      </main>
+      <main class="learn-page" id="panel-tutorial" role="tabpanel" aria-labelledby="tab-tutorial" tabindex="0" hidden>
+        <div class="learn-content">
+          <header class="learn-hero"><span class="learn-kicker">TUTORIAL / 7 LESSONS</span><h1>余裕が、待ち時間を減らす。</h1><p>「平均では処理できる」のに、なぜ並ぶのでしょう。到着と処理のばらつきから考えます。</p></header>
+          <section class="lesson"><h2>01 / 待ち行列理論とは？</h2><p>人や仕事が到着し、順番を待ち、窓口で処理される仕組みを数学で扱うものです。受付・レジ・サーバーなどで、待ち人数や待ち時間、必要な窓口数を考える助けになります。</p><p>平均到着数が処理能力より少なくても、到着が重なったり、対応に時間がかかったりすると行列ができます。このシミュレーターでは、そのばらつきも観察できます。</p></section>
+          <section class="lesson"><h2>02 / 利用率ρとは？</h2><div class="learn-formula">ρ = λ ÷ (c × μ) = 到着率 ÷ 全窓口の処理能力</div><p>λ（ラムダ）は1時間の平均到着数、μ（ミュー）は1窓口が1時間に処理できる平均人数、c は窓口数です。単位をそろえて計算します。</p><p>たとえば到着90人/時、1窓口30人/時、4窓口なら、ρ = 90 ÷ 120 = <strong>0.75（75%）</strong>。安定した定常状態では、窓口の平均稼働割合に対応します。ρ &gt; 1 は負荷が能力を超えるという意味で、実際の稼働割合が100%を超えるわけではありません。</p></section>
+          <section class="lesson"><h2>03 / 1に近づくほど、待ち時間は急増する</h2><p>余裕が小さいと、たまたまできた行列を解消する時間がなくなります。下は<strong>1窓口・平均サービス時間1分・ポアソン到着・指数サービス（M/M/1）</strong>の定常理論値です。サービス中の時間を含まない、行列での平均待ち時間を示します。</p>
+            <div class="learn-demo"><div><label for="tutorial-rho">利用率ρ：<output id="tutorial-rho-value" for="tutorial-rho">0.75（75%）</output></label><input type="range" id="tutorial-rho" min="0" max="110" step="1" value="75"><p>Wq = ρ ÷ (1 − ρ) × 平均サービス時間<br>この式は 0 ≤ ρ &lt; 1 で使います。</p></div><div class="learn-result" aria-live="polite">平均待ち時間<strong id="tutorial-wait">3.00 分</strong><span id="tutorial-status">安定していても、待ち時間は発生します。</span></div></div>
+            <table class="learn-table"><caption>同じ窓口でも、余裕でこれだけ変わる</caption><thead><tr><th scope="col">利用率ρ</th><th scope="col">平均待ち時間</th></tr></thead><tbody><tr><td>0.50</td><td>1分</td></tr><tr><td>0.80</td><td>4分</td></tr><tr><td>0.90</td><td>9分</td></tr><tr><td>0.95</td><td>19分</td></tr><tr><td>0.99</td><td>99分</td></tr></tbody></table><p>複数窓口では数値が変わります。「基本（定常状態）」では窓口数と到着のばらつきも変更できます。</p><button type="button" class="learn-button" data-open-tab="steady">基本のシミュレーションで確かめる →</button>
+          </section>
+          <section class="lesson"><h2>04 / 1を超え続けると、待ち時間は発散する</h2><p>処理能力100人/時に対して120人/時が来続ければ、行列は平均で毎時20人ずつ増えます。到着が永続し、待てる人数に上限がなく、離脱もしないモデルでは、待ち時間に有限の定常平均がなくなります。これを「発散」と呼びます。一瞬で無限に待つ、という意味ではありません。</p><p><strong>ρ = 1 も安心ではありません。</strong>このアプリの M/M/c モデルでは、ばらつきによる行列を吸収する余裕がなく、有限の定常平均待ち時間は得られません。安定条件は ρ &lt; 1 です。</p></section>
+          <section class="lesson"><h2>05 / 一時的に超えても、あとで解消できればよい</h2><p>時間帯ごとの到着率から計算したρが一時的に1を超えることはあります。重要なのは、後の時間帯に十分な余剰能力を用意し、たまった行列を解消できることです。</p><p>能力100人/時に対し、120人/時が30分続くと、単純な流量計算では10人の積み残し。次に60人/時へ減れば余力は40人/時なので、解消に約15分かかります。実際にはばらつきがあり、時間は前後します。</p><p>1日平均のρが1未満でも、ピークの待ち時間や収容人数が許容範囲とは限りません。ピークの長さ・回復時間・受付終了時の残人数を見ましょう。</p><button type="button" class="learn-button" data-open-tab="day">時間帯ごとの混雑を試す →</button></section>
+          <section class="lesson"><h2>06 / 目標利用率は、まず70〜80%から考える</h2><p><strong>このチュートリアルでは、ρ = 0.7〜0.8 を検討の出発点として提案します。</strong>普遍的な基準や待ち時間の保証ではありません。窓口数、到着・対応時間のばらつき、許容待ち時間によって適切な値は変わります。</p><p>急な集中が多い、少数の窓口で対応する、短い待ち時間が必要なら、さらに低い利用率を検討します。多数の窓口に1本の列から振り分ける場合は、より高い利用率でも目標を満たすことがあります。</p><p>まず「平均何分以内」「何%の人を何分以内に案内するか」を決め、ピーク時の到着率で必要数を計算し、シミュレーションや実測で確かめます。たとえば90人/時、1窓口30人/時、目標ρ = 0.75 なら、必要窓口数は 90 ÷ (30 × 0.75) = 4窓口です。本アプリの平均値だけでは、待ち時間の上位何%という目標までは検証できません。</p></section>
+          <section class="lesson"><h2>07 / 窓口の前後も、ひと続きで考える</h2><div class="learn-flow" aria-label="入口から出口までの処理能力の例"><span>入口・事前確認<br><strong>60人/時</strong></span>→<span>窓口<br><strong>120人/時</strong></span>→<span>受け取り・出口<br><strong>50人/時</strong></span></div><p>全員がこの順で通るなら、全体の持続的な処理能力は最大でも50人/時です。窓口に余裕があっても、入口で待たされたり、出口で詰まったりします。出口の滞留が窓口をふさぐこともあります。</p><p>窓口のρだけを目標にするのではなく、入口・案内・受付・受け取り・通路・出口の待ち人数と能力を確認しましょう。「行列ボトルネック」では通路の狭さや遅い歩行者による滞留を観察できます。窓口との連結モデルではなく、通路単体の例です。</p><button type="button" class="learn-button" data-open-tab="bottleneck">通路のボトルネックを観察する →</button></section>
+          <p>理論の参考：<a href="https://web.mit.edu/dimitrib/www/Queueing_Data_Nets.pdf">Bertsekas &amp; Gallager, Data Networks — Queueing Theory</a>。本文と計算例はオフラインでも利用できます。</p>
+          <button type="button" class="learn-button" data-open-tab="home">トップメニューへ戻る</button>
+        </div>
+      </main>
+
+      <div class="app" id="panel-steady" role="tabpanel" aria-labelledby="tab-steady" hidden>
       <aside class="panel">
         <header class="panel-head">
           <h1>待ち行列シミュレーター</h1>
@@ -2360,6 +2424,7 @@
       });
 
       document.addEventListener("keydown", (event) => {
+        if (activeTab === "home" || activeTab === "tutorial") return;
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLButtonElement) return;
         if (event.code === "Space") {
           event.preventDefault();
@@ -3528,11 +3593,13 @@
       // ---------- タブ ----------
 
       const tabs = [
+        { key: "home", button: el("tab-home"), panel: el("panel-home") },
+        { key: "tutorial", button: el("tab-tutorial"), panel: el("panel-tutorial") },
         { key: "steady", button: el("tab-steady"), panel: el("panel-steady") },
         { key: "day", button: el("tab-day"), panel: el("panel-day") },
         { key: "bottleneck", button: el("tab-bottleneck"), panel: el("panel-bottleneck") },
       ];
-      let activeTab = "steady";
+      let activeTab = "home";
 
       function selectTab(key) {
         activeTab = key;
@@ -3540,6 +3607,7 @@
           const on = tab.key === key;
           tab.button.setAttribute("aria-selected", String(on));
           tab.panel.hidden = !on;
+          tab.button.tabIndex = on ? 0 : -1;
         }
         // 見えていなかった側の時計が飛ばないように測り直す。
         lastFrame = performance.now();
@@ -3548,6 +3616,33 @@
       for (const tab of tabs) {
         tab.button.addEventListener("click", () => selectTab(tab.key));
       }
+
+      for (const button of document.querySelectorAll("[data-open-tab]")) {
+        button.addEventListener("click", () => {
+          selectTab(button.dataset.openTab);
+          el("tab-" + activeTab).focus();
+        });
+      }
+      tabs.forEach((tab, index) => {
+        tab.button.addEventListener("keydown", (event) => {
+          let next;
+          if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+          else if (event.key === "ArrowLeft") next = (index + tabs.length - 1) % tabs.length;
+          else if (event.key === "Home") next = 0;
+          else if (event.key === "End") next = tabs.length - 1;
+          else return;
+          event.preventDefault();
+          selectTab(tabs[next].key);
+          tabs[next].button.focus();
+        });
+      });
+      el("tutorial-rho").addEventListener("input", () => {
+        const rho = Number(el("tutorial-rho").value) / 100;
+        el("tutorial-rho-value").textContent = rho.toFixed(2) + "（" + Math.round(rho * 100) + "%）";
+        el("tutorial-wait").textContent = rho < 1 ? (rho / (1 - rho)).toFixed(2) + " 分" : "有限の定常値なし";
+        el("tutorial-status").textContent = rho >= 1 ? "ρ ≥ 1 では、有限の平均待ち時間に落ち着きません。" : rho >= 0.9 ? "余裕が小さく、平均待ち時間が急増します。" : "安定していても、待ち時間は発生します。";
+      });
+      selectTab("home");
 
       // ---------- ループ ----------
 
@@ -3568,7 +3663,7 @@
         } else if (activeTab === "bottleneck") {
           if (bottleneckRunning) bottleneckSim.advance(dt * Number(el("b-speed").value) / 60);
           drawBottleneck();
-        } else {
+        } else if (activeTab === "day") {
           if (dayRunning) daySim.advance(dt * daySpeed);
           drawDayScene(dt);
           drawDayChart();
