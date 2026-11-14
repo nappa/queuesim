@@ -967,14 +967,23 @@
         <div class="learn-content">
           <header class="learn-hero"><span class="learn-kicker">TUTORIAL / 7 LESSONS</span><h1>待ち行列理論を5分で理解する。</h1><p>レーン数の最適値を計算する「待ち行列理論」を、ぱっと理解しましょう。</p></header>
           <section class="lesson"><h2>01 / 待ち行列理論とは？</h2><p>人や仕事が到着し、順番を待ち、窓口で処理される仕組みを数学で扱うものです。受付・レジ・サーバーなどで、待ち人数や待ち時間、必要な窓口数を考える助けになります。</p><p>平均到着数が処理能力より少なくても、到着が重なったり、対応に時間がかかったりすると行列ができます。このシミュレーターでは、そのばらつきも観察できます。</p></section>
-          <section class="lesson"><h2>02 / 利用率ρ（ロー）とは？</h2><div class="learn-formula">ρ = λ ÷ (c × μ) = 到着率 ÷ 全窓口の処理能力</div><p>ρ は「ロー」と読み、利用率を表します。λ（ラムダ）は1時間の平均到着数、μ（ミュー）は1窓口が1時間に処理できる平均人数、c は窓口数です。単位をそろえて計算します。</p><p>たとえば到着90人/時、1窓口30人/時、4窓口なら、ρ = 90 ÷ 120 = <strong>0.75（75%）</strong>。安定した定常状態では、窓口の平均稼働割合に対応します。ρ &gt; 1 は負荷が能力を超えるという意味で、実際の稼働割合が100%を超えるわけではありません。</p>
+          <section class="lesson"><h2>02 / 利用率ρ（ロー）とは？</h2>
+            <p>窓口の利用率「ρ (ロー)」が待ち行列理論の中心となる数値です。</p>
+            <ul>
+              <li><strong>c = 窓口数</strong>（同時に対応できる窓口の数）</li>
+              <li><strong>λ（ラムダ）= 到着数</strong>（1時間あたりに到着する平均人数：人/時）</li>
+              <li><strong>μ（ミュー）= 1窓口の処理能力</strong>（1窓口が1時間あたりに処理できる平均人数：人/時）</li>
+              <li><strong>c × μ = 合計処理能力</strong>（全窓口が1時間あたりに処理できる平均人数：人/時）</li>
+              <li><strong>ρ（ロー）= 利用率</strong>（到着数を合計処理能力で割った割合）</li>
+            </ul>
+            <div class="learn-formula">ρ = λ ÷ (c × μ) = 到着率 ÷ 全窓口の処理能力</div>
+            <p>たとえば到着90人/時、1窓口30人/時、4窓口なら、ρ = 90 ÷ 120 = <strong>0.75（75%）</strong>。安定した定常状態では、窓口の平均稼働割合に対応します。ρ &gt; 1 は負荷が能力を超えるという意味で、実際の稼働割合が100%を超えるわけではありません。</p>
             <div class="lesson-visual"><p><strong>λとμを動かしてみる（窓口数 c = 4 で固定）</strong></p><div class="learn-demo"><div>
               <label for="tutorial-lambda">到着率λ：<output id="tutorial-lambda-value">90 人/時</output></label><input id="tutorial-lambda" type="range" min="0" max="240" step="5" value="90">
               <label for="tutorial-mu">1窓口の処理能力μ：<output id="tutorial-mu-value">30 人/時</output> → 合計処理能力<output id="tutorial-capacity">120 人/時</output></label><input id="tutorial-mu" type="range" min="5" max="60" step="5" value="30">
             </div><div class="learn-result" id="tutorial-load-card" aria-live="polite">利用率ρ（ロー）<strong id="tutorial-load">0.75（75%）</strong><span id="tutorial-load-formula">90 ÷ (4 × 30) = 0.75</span><p id="tutorial-load-note">到着率は処理能力を下回っています。</p></div></div></div>
           </section>
           <p class="rho-legend">表示色の目安：<span class="rho-badge" data-rho-state="calm">ρ &lt; 0.8：能力に余裕</span><span class="rho-badge" data-rho-state="tight">0.8 ≤ ρ &lt; 1：余裕が小さい</span><span class="rho-badge" data-rho-state="unstable">ρ ≥ 1：安定条件を満たさない</span>。色は負荷の目安で、待ち時間を保証するものではありません。</p>
-          <section class="lesson"><h2>ρの性質 / 条件が違っても、負荷の割合を比較できる</h2><p>窓口数やサービス時間が変わっても、到着率を全窓口の処理能力で割れば、同じ指標ρで「どれくらい余裕があるか」を比較できます。ρは単位のない比率で、このモデルではρ &lt; 1が安定の条件です。</p><p><strong>ただし、待ち時間のすべてがρだけで決まるわけではありません。</strong>同じρでも、窓口数・サービス時間・到着や処理時間のばらつきによって待ち時間は変わります。たとえば1窓口のM/M/1でρ = 0.75なら、平均サービス時間1分では平均待ち3分、2分では6分になります。ρは混雑の割合、実際の待ち時間には処理の速さや窓口構成も必要です。</p></section>
           <section class="lesson"><h2>03 / 1に近づくほど、待ち時間は急増する</h2><p>余裕が小さいと、たまたまできた行列を解消する時間がなくなります。下は<strong>1窓口・平均サービス時間1分・ポアソン到着・指数サービス（M/M/1）</strong>の定常理論値です。サービス中の時間を含まない、行列での平均待ち時間を示します。</p>
             <div class="learn-demo"><div><label for="tutorial-rho">利用率ρ：<output id="tutorial-rho-value" for="tutorial-rho">0.75（75%）</output></label><input type="range" id="tutorial-rho" min="0" max="110" step="1" value="75"><p>Wq = ρ ÷ (1 − ρ) × 平均サービス時間<br>この式は 0 ≤ ρ &lt; 1 で使います。</p></div><div class="learn-result" id="tutorial-wait-card" aria-live="polite">平均待ち時間<strong id="tutorial-wait">3.00 分</strong><span id="tutorial-status">安定していても、待ち時間は発生します。</span></div></div>
             <figure class="lesson-visual"><svg id="tutorial-curve" viewBox="0 0 660 340" role="img" aria-labelledby="tutorial-curve-title tutorial-curve-description"><title id="tutorial-curve-title">利用率ρと平均待ち時間</title><desc id="tutorial-curve-description">横軸は利用率ρ、縦軸は平均待ち時間（分）。1窓口、平均サービス時間1分のM/M/1モデルでは、ρが1に近づくほど待ち時間が急増します。</desc><g id="tutorial-curve-drawing"></g></svg><figcaption class="lesson-caption">横軸ρ、縦軸Wq（分）。縦軸は0〜100分で固定。曲線はρ &lt; 1のみで、1に近づくとグラフの上限を超えて伸びます。点は上のスライダーの値です。02とは別の、1窓口の例です。</figcaption></figure>
