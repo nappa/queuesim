@@ -1031,7 +1031,9 @@
             </div>
             <button type="button" class="learn-button" data-open-tab="steady">基本のシミュレーションでさらに試す →</button>
           </section>
-          <section class="lesson"><h2>06 / 目標利用率は、まず70〜80%から考える</h2><p><strong>このチュートリアルでは、ρ = 0.7〜0.8 を検討の出発点として提案します。</strong>普遍的な基準や待ち時間の保証ではありません。窓口数、到着・対応時間のばらつき、許容待ち時間によって適切な値は変わります。</p><p>急な集中が多い、少数の窓口で対応する、短い待ち時間が必要なら、さらに低い利用率を検討します。多数の窓口に1本の列から振り分ける場合は、より高い利用率でも目標を満たすことがあります。</p><p>まず「平均何分以内」「何%の人を何分以内に案内するか」を決め、ピーク時の到着率で必要数を計算し、シミュレーションや実測で確かめます。たとえば90人/時、1窓口30人/時、目標ρ = 0.75 なら、必要窓口数は 90 ÷ (30 × 0.75) = 4窓口です。本アプリの平均値だけでは、待ち時間の上位何%という目標までは検証できません。</p><p><strong>同じ客が来ても、3窓口と4窓口ではどう変わるでしょうか。</strong>到着90人/時・1窓口30人/時を共通にして、同時に比較します。3窓口はρ = 1.00、4窓口はρ = 0.75です。</p>
+          <section class="lesson"><h2>06 / 目標利用率は、まず60〜80%から考える</h2>
+            <p>経験的には、ρ = 0.6〜0.8 程度がほどよい目安です。<br>（※普遍的な基準はありません、到着時間・対応時間のばらつきが大きい場合にはρ=0.5もよいでしょう）</p>
+            <p>同じ客が来ても、窓口数が1つ変動するだけでρが大きく変わってしまうことがあります。<br>到着90人/時・1窓口30人/時を共通にして、同時に比較します。</p>
             <div class="lesson-visual">
               <div class="tutorial-timeline"><label for="tutorial-time-6">経過時間：<output id="tutorial-time-value-6" for="tutorial-time-6">0.0 分 / 60分</output></label><input id="tutorial-time-6" type="range" min="0" max="60" step="0.1" value="0"><p class="lesson-caption">スライダーを動かすと、その時点へ移動して一時停止します。</p></div><div class="lesson-controls"><button type="button" class="learn-button" id="tutorial-play-6">再生</button><button type="button" class="learn-button" id="tutorial-reset-6">両方を最初から</button></div>
               <p class="lesson-metrics" id="tutorial-animation-status-6"></p>
