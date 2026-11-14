@@ -870,7 +870,23 @@
       .tabs { overflow-x: auto; }
       #b-scene { width: 100%; height: 100%; display: block; }
       #b-chart { width: 100%; height: 120px; display: block; }
-      .stage-bottleneck { grid-template-rows: minmax(260px, 1fr) auto auto; }
+      .stage-bottleneck { grid-template-rows: minmax(340px, 1fr) auto auto; }
+      .b-entry-counter {
+        position: absolute; top: 12px; left: 14px; max-width: calc(100% - 110px);
+        padding: 10px 14px; border: 2px solid var(--line); border-radius: 10px;
+        background: var(--surface-2); pointer-events: none;
+      }
+      .b-entry-counter strong { display: block; font-size: 12px; }
+      .b-entry-number { font: 700 34px var(--font-num); line-height: 1.2; }
+      .b-entry-counter small { font-size: 13px; margin-left: 4px; }
+      .b-entry-counter p { margin: 2px 0 0; font-size: 11px; color: var(--muted); }
+      .b-entry-counter[data-waiting="true"], #b-outside-tile[data-waiting="true"] {
+        border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+      }
+      .b-entry-counter[data-waiting="true"] .b-entry-number, #b-outside-tile[data-waiting="true"] .tile-value { color: var(--warn); }
+      #b-outside-tile { border-width: 2px; }
+      #b-outside-tile .tile-value { font-size: 32px; }
+
       .b-presets { display: flex; flex-wrap: wrap; gap: 6px; }
       .b-presets button, .b-actions button { padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); cursor: pointer; }
       .b-actions { display: flex; gap: 8px; }
@@ -985,7 +1001,7 @@
       </main>
       <main class="learn-page" id="panel-tutorial" role="tabpanel" aria-labelledby="tab-tutorial" tabindex="0" hidden>
         <div class="learn-content">
-          <header class="learn-hero"><span class="learn-kicker">TUTORIAL / 8 LESSONS</span><h1>待ち行列理論を5分で理解する。</h1><p>レーン数の最適値を計算する「待ち行列理論」を、ぱっと理解しましょう。</p></header>
+          <header class="learn-hero"><span class="learn-kicker">TUTORIAL / 9 LESSONS</span><h1>待ち行列理論を5分で理解する。</h1><p>レーン数の最適値を計算する「待ち行列理論」を、ぱっと理解しましょう。</p></header>
           <section class="lesson"><h2>01 / 待ち行列理論とは？</h2><p>人や仕事が到着し、順番を待ち、窓口で処理される仕組みを数学で扱うものです。</p><p>「レジ」「ATM」「もぎり」の数学、とも言えましょう。</p><p>このシミュレーターでは、その数学をわかりやすく学べます。</p></section>
           <section class="lesson"><h2>02 / 利用率ρ（ロー）とは？</h2>
             <p><strong>「客」</strong>とは、窓口での対応を受ける人です。レジの買い物客、ATMの利用者、もぎりを通る来場者などが当てはまります。</p>
@@ -1073,6 +1089,25 @@
               <p id="tutorial-pooling-theory"></p>
               <p class="lesson-caption">基本タブと同じ人物・窓口表示。到着間隔とサービス時間はランダムで、平均サービス時間は2分。両配置には同じ時刻に同じ客が到着し、その客には同じサービス時間を与えます。初期停止・1秒で1分・60分で終了。短時間の結果には偶然の差があり、すべての時点で1か所の待ち時間やばらつきが小さいとは限りません。列の選び方や場所間の移動を認めると結果は変わります。</p>
             </div>
+          </section>
+          <section class="lesson"><h2>09 / 細かいばらつきより、まず平均で大づかみに考える</h2>
+            <p>1人に何秒かかるか、次の客がいつ来るかを正確に当てる必要はありません。<strong>人数をまとめると、1人ずつのばらつきがならされ、平均は見積もりやすくなります。</strong>まずは「だいたい何人来るか」「1人に平均何分かかるか」から考えましょう。</p>
+            <h3>大数の法則：たくさん集めると、平均が落ち着く</h3>
+            <p>対応が10秒で終わる客も、5分かかる客もいます。数人だけを見ると、その偶然に左右されます。同じ条件で人数を増やして平均を取ると、もともとの平均に近づいていく。これが<strong>大数の法則</strong>です。人数を1人増やすたびに必ず近づく、という意味ではありません。</p>
+            <h3>中心極限定理：平均の散らばりは、山型に近づく</h3>
+            <p>「何人かの平均を取る」を何度も繰り返すと、その平均の分布は、人数が十分に多いと釣り鐘のような山型に近づきます。これが<strong>中心極限定理</strong>です。個々の客のサービス時間が山型になるのではなく、<strong>まとめて取った平均</strong>が山型に近づきます。</p>
+            <p>また、互いに独立で同じ分布のデータなら、平均のばらつき（標準偏差）は、1人分のばらつきの1/√人数になります。<strong>人数が4倍なら平均のばらつきは半分、100倍なら10分の1</strong>です。</p>
+            <div class="lesson-visual">
+              <label for="tutorial-sample-size">平均を取る人数：<output id="tutorial-sample-size-value">16 人</output></label><input type="range" id="tutorial-sample-size" min="0" max="4" step="1" value="2">
+              <p>平均2分のランダムなサービス時間から、指定人数の平均を400組分計算します。人数を増やすと、各組の平均が2分の近くに集まってきます。</p>
+              <svg viewBox="0 0 660 290" id="tutorial-average-chart" role="img" aria-labelledby="tutorial-average-title tutorial-average-desc"><title id="tutorial-average-title">人数ごとの平均サービス時間の分布</title><desc id="tutorial-average-desc">横軸は各組の平均サービス時間、縦軸は400組のうちの組数。人数を増やすほど平均2分の付近に集中します。</desc><g id="tutorial-average-drawing"></g></svg>
+              <div class="learn-demo"><div class="learn-result">平均のばらつき（理論値）<strong id="tutorial-average-error">0.50 分</strong><span>1人の場合は2分</span></div><div class="learn-result">最初の1組の平均（実測）<strong id="tutorial-average-example">—</strong><span>もともとの平均は2分</span></div></div>
+              <p class="lesson-caption" id="tutorial-average-note"></p>
+            </div>
+            <h3>待ち行列では、どう使えばよい？</h3>
+            <p>まず平均到着数と平均サービス時間を見積もり、ρから窓口数を概算する。次に、ばらつきを受け止められる余裕を残し、シミュレーションや実測で確かめる。<strong>細かい1人ずつの動きにとらわれすぎず、まず平均で全体像をつかめばよい</strong>、ということです。</p>
+            <p>ただし、平均が安定しても、目の前の行列が消えるわけではありません。ρが1に近いと小さな偏りでも待ちが伸びます。また、一斉来場や時間帯で傾向が変わる場合は、全日をひとまとめにせず、その時間帯ごとに見積もりましょう。</p>
+            <p class="lesson-caption">図は、独立で同じ分布に従い、平均・分散が有限のサービス時間を例にしています。参考：<a href="https://openstax.org/books/introductory-statistics-2e/pages/7-1-the-central-limit-theorem-for-sample-means-averages">OpenStax：中心極限定理</a>、<a href="https://openstax.org/books/introductory-statistics-2e/pages/7-3-using-the-central-limit-theorem">大数の法則</a>。</p>
           </section>
           <p>理論の参考：<a href="https://web.mit.edu/dimitrib/www/Queueing_Data_Nets.pdf">Bertsekas &amp; Gallager, Data Networks — Queueing Theory</a>。本文と計算例はオフラインでも利用できます。</p>
           <button type="button" class="learn-button" data-open-tab="home">トップメニューへ戻る</button>
@@ -1408,9 +1443,9 @@
           <footer class="panel-foot"><p>1マス0.6m、長さ36mの簡易歩行モデル。スマホ歩行者は遅く歩き、ときどき1〜3秒立ち止まります。実測に基づく混雑・避難予測ではありません。</p></footer>
         </aside>
         <main class="stage stage-bottleneck">
-          <section class="scene-wrap"><canvas id="b-scene" aria-label="通路の俯瞰図。左から右に歩行し、中央の狭窄部で合流します"></canvas><div class="scene-clock"><span id="b-clock">0:00</span><i>経過時間</i></div></section>
+          <section class="scene-wrap"><div class="b-entry-counter" id="b-entry-counter" data-waiting="false"><strong>入口で待っている客</strong><span class="b-entry-number" id="b-entry-count">0</span><small>人</small><p id="b-entry-note">入口の待機はありません</p></div><canvas id="b-scene" aria-label="通路の俯瞰図。左から右に歩行し、中央の狭窄部で合流します"></canvas><div class="scene-clock"><span id="b-clock">0:00</span><i>経過時間</i></div></section>
           <section class="readouts">
-<div class="tile"><span class="tile-label">通路内</span><span class="tile-value" id="b-inside">0</span><span class="tile-sub">人</span></div><div class="tile"><span class="tile-label">入口の待機</span><span class="tile-value" id="b-outside">0</span><span class="tile-sub">人</span></div><div class="tile"><span class="tile-label">通過済み</span><span class="tile-value" id="b-out">0</span><span class="tile-sub">人</span></div><div class="tile"><span class="tile-label">平均通過時間</span><span class="tile-value" id="b-travel">0</span><span class="tile-sub">秒</span></div><div class="tile"><span class="tile-label">直近1分の流出</span><span class="tile-value" id="b-flow">0</span><span class="tile-sub">人/分</span></div>          </section>
+<div class="tile" id="b-outside-tile" data-waiting="false"><span class="tile-label">入口待機</span><span class="tile-value" id="b-outside">0</span><span class="tile-sub">人・まだ通路の外</span></div><div class="tile"><span class="tile-label">通路内</span><span class="tile-value" id="b-inside">0</span><span class="tile-sub">人・入場済み</span></div><div class="tile"><span class="tile-label">通過済み</span><span class="tile-value" id="b-out">0</span><span class="tile-sub">人</span></div><div class="tile"><span class="tile-label">平均通過時間</span><span class="tile-value" id="b-travel">0</span><span class="tile-sub">秒</span></div><div class="tile"><span class="tile-label">直近1分の流出</span><span class="tile-value" id="b-flow">0</span><span class="tile-sub">人/分</span></div>          </section>
           <section class="chart-wrap"><div class="chart-head"><h2>滞留人数の推移（入口待機を含む）</h2><span class="legend">直近5分</span></div><canvas id="b-chart" aria-label="滞留人数の時系列"></canvas><p class="theory-note">青緑：通常歩行　紫：スマホ歩行　赤い輪：前方が詰まっている人。平均通過時間は入口待機を含み、退出済みの人で集計。</p><p class="theory-note" id="b-status" role="status"></p></section>
         </main>
       </div>
@@ -3705,8 +3740,8 @@
         const color = name => style.getPropertyValue("--" + name).trim();
         ctx.clearRect(0, 0, width, height);
         const left = 24, cell = Math.max(1, (width - 48) / 60);
-        const laneHeight = Math.min(42, (height - 130) / sim.config.width);
-        const top = (height - laneHeight * sim.config.width) / 2;
+        const laneHeight = Math.min(42, Math.max(12, (height - 170) / sim.config.width));
+        const top = 120 + Math.max(0, (height - 160 - laneHeight * sim.config.width) / 2);
         for (let x = 0; x < 60; x++) for (let lane = 0; lane < sim.config.width; lane++) {
           ctx.fillStyle = color(sim.allowed(x, lane) ? "surface-2" : "line");
           ctx.fillRect(left + x * cell, top + lane * laneHeight, cell + 0.5, laneHeight);
@@ -3714,7 +3749,7 @@
         ctx.font = "12px " + FONT_UI;
         ctx.fillStyle = color("muted");
         ctx.textAlign = "left";
-        ctx.fillText("入口 →", left, top - 18);
+        ctx.fillText("入口待機から入場 →", left, top - 18);
         ctx.textAlign = "center";
         ctx.fillText(sim.config.neck < sim.config.width ? "狭窄部（6m）" : "狭窄なし", left + 35 * cell, top - 18);
         ctx.textAlign = "right";
@@ -3728,12 +3763,17 @@
           if (p.phone && cell > 7) { ctx.fillStyle = color("surface"); ctx.fillRect(x, y - 2, 2, 4); }
         }
         ctx.textAlign = "left"; ctx.fillStyle = color("muted");
-        ctx.fillText("通路 36m · 幅 " + (sim.config.width * 0.6).toFixed(1) + "m · 入口待機 " + sim.pending.length + "人", left, top + laneHeight * sim.config.width + 28);
+        ctx.fillText("通路 36m · 幅 " + (sim.config.width * 0.6).toFixed(1) + "m", left, top + laneHeight * sim.config.width + 28);
+        const waiting = sim.pending.length;
+        el("b-entry-counter").dataset.waiting = String(waiting > 0);
+        el("b-outside-tile").dataset.waiting = String(waiting > 0);
+        el("b-entry-count").textContent = waiting.toLocaleString("ja-JP");
+        el("b-entry-note").textContent = waiting > 0 ? "通路に入れず、入口の外で待機中" : "入口の待機はありません";
         const seconds = Math.floor(sim.clock * 60);
         el("b-clock").textContent = Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
         for (const [key, value] of Object.entries({ inside: sim.people.length, outside: sim.pending.length, out: sim.exited,
           travel: sim.exited ? (sim.travel * 60 / sim.exited).toFixed(1) : "—",
-          flow: sim.clock >= 1 ? sim.departures.length : "—" })) el("b-" + key).textContent = value;
+          flow: sim.clock >= 1 ? sim.departures.length : "—" })) el("b-" + key).textContent = typeof value === "number" ? value.toLocaleString("ja-JP") : value;
         el("b-status").textContent = sim.excess ? "待機上限に達したため、追加の " + sim.excess + " 人は計算対象外です。到着人数を減らしてください。" : "到着 " + sim.arrived + " 人 · 赤い輪 " + sim.people.filter(p => p.blocked).length + " 人 · 流出は開始1分後から表示";
         const chart = sizeCanvas(el("b-chart")), g = chart.ctx;
         g.clearRect(0, 0, chart.width, chart.height);
@@ -4148,6 +4188,46 @@
       updatePoolingRoute();
       updateTutorialLoad();
       updateTutorialCurve();
+      // 1人のサービス時間は平均2分の指数分布。各組で同じ先頭N人を比較する。
+      function averageSamples(count, groups = 400) {
+        const means = [];
+        for (let group = 0; group < groups; group++) {
+          const random = makeRng(0x9124 + group);
+          let sum = 0;
+          for (let i = 0; i < count; i++) sum += -2 * Math.log(Math.max(random(), 1e-12));
+          means.push(sum / count);
+        }
+        return means;
+      }
+      function updateAverageDemo() {
+        const count = [1, 4, 16, 64, 256][Number(el("tutorial-sample-size").value)];
+        const means = averageSamples(count);
+        const bins = new Array(80).fill(0);
+        let overflow = 0;
+        for (const mean of means) {
+          if (mean >= 8) overflow++;
+          else bins[Math.floor(mean / 0.1)]++;
+        }
+        const max = Math.max(1, ...bins);
+        const x = minutes => 50 + minutes / 8 * 580;
+        const y = number => 240 - number / max * 190;
+        let drawing = `<text x="50" y="20">組数（400組のうち）</text>`;
+        for (const value of [0, Math.ceil(max / 2), max]) {
+          drawing += `<path d="M50 ${y(value)}H630" stroke="var(--line)"/><text x="42" y="${y(value)+5}" text-anchor="end">${value}</text>`;
+        }
+        bins.forEach((value, i) => {
+          drawing += `<rect x="${x(i * 0.1)}" y="${y(value)}" width="6.5" height="${240-y(value)}" fill="var(--accent)" opacity=".75"/>`;
+        });
+        for (let minute = 0; minute <= 8; minute++) drawing += `<text x="${x(minute)}" y="260" text-anchor="middle">${minute}</text>`;
+        drawing += `<path d="M${x(2)} 40V240" stroke="var(--crit)" stroke-width="2" stroke-dasharray="5 4"/><text x="${x(2)+8}" y="40">もともとの平均2分</text><text x="340" y="285" text-anchor="middle">各組の平均サービス時間（分）</text>`;
+        el("tutorial-average-drawing").innerHTML = drawing;
+        el("tutorial-sample-size-value").textContent = count + " 人";
+        el("tutorial-average-error").textContent = (2 / Math.sqrt(count)).toFixed(3) + " 分";
+        el("tutorial-average-example").textContent = means[0].toFixed(3) + " 分";
+        el("tutorial-average-note").textContent = `固定シードによる計算例。横軸は0〜8分で固定、縦軸は組数に合わせて調整します。8分以上で図の外にある組：${overflow}組。個々のサービス時間はばらついたままです。`;
+      }
+      el("tutorial-sample-size").addEventListener("input", updateAverageDemo);
+      updateAverageDemo();
       let tutorialPaintAt = 0;
       selectTab("home");
 
