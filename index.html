@@ -988,12 +988,11 @@
             </div><div class="learn-result" id="tutorial-load-card" aria-live="polite">利用率ρ（ロー）<strong id="tutorial-load">0.75（75%）</strong><span id="tutorial-load-formula">90 ÷ (4 × 30) = 0.75</span><p id="tutorial-load-note">処理能力に余裕があります。</p></div></div></div>
           </section>
           <section class="lesson"><h2>03 / ρが1に近づくと、急激に待ち時間が悪化する</h2>
-            <p>ρが0.8以下でも待ち時間は発生しますが、1に近づくほど急激に長くなります。特に<strong>ρが0.9〜1に近づくにつれて、待ち時間は急激に悪化します。</strong>余裕が小さいと、たまたまできた行列を解消する時間がなくなるためです。</p>
+            <p>ρが増えれば増えるほど、平均待ち時間が悪化します。<br>特に<strong>ρが0.9〜1に近づくにつれて、待ち時間は急激に悪化します</strong>。</p>
             <ul>
-              <li><strong>窓口が1個減っただけで急に悪化する。</strong>到着90人/時・1窓口30人/時なら、4窓口ではρ = 0.75ですが、3窓口になるとρ = 1になり、安定条件を満たさなくなります。</li>
-              <li><strong>サービス時間が少し長くなっただけで急に悪化する。</strong>同じ到着90人/時・4窓口でも、平均サービス時間が2分から2分30秒に延びると、μは30人/時から24人/時へ低下し、ρは0.75から約0.94へ上がります。</li>
+              <li>窓口が1個減っただけで急に悪化する。</li>
+              <li>サービス時間が少し長くなっただけで急に悪化する。</li>
             </ul>
-            <p>「ρが0.8以下なら、ほとんど待たない」とは限りません。以下の1窓口の例では、ρ = 0.8でも平均4分待ちます。実際の待ち時間は窓口数・サービス時間・ばらつきによって変わります。</p>
             <p>下は<strong>1窓口・平均サービス時間1分・ポアソン到着・指数サービス（M/M/1）</strong>の定常理論値です。サービス中の時間を含まない、行列での平均待ち時間を示します。</p>
             <div class="learn-demo"><div><label for="tutorial-rho">利用率ρ：<output id="tutorial-rho-value" for="tutorial-rho">0.75（75%）</output></label><input type="range" id="tutorial-rho" min="0" max="110" step="1" value="75"><p>Wq = ρ ÷ (1 − ρ) × 平均サービス時間<br>この式は 0 ≤ ρ &lt; 1 で使います。</p></div><div class="learn-result" id="tutorial-wait-card" aria-live="polite">平均待ち時間<strong id="tutorial-wait">3.00 分</strong><span id="tutorial-status">安定していても、待ち時間は発生します。</span></div></div>
             <figure class="lesson-visual"><svg id="tutorial-curve" viewBox="0 0 660 340" role="img" aria-labelledby="tutorial-curve-title tutorial-curve-description"><title id="tutorial-curve-title">利用率ρと平均待ち時間</title><desc id="tutorial-curve-description">横軸は利用率ρ、縦軸は平均待ち時間（分）。1窓口、平均サービス時間1分のM/M/1モデルでは、ρが1に近づくほど待ち時間が急増します。</desc><g id="tutorial-curve-drawing"></g></svg><figcaption class="lesson-caption">横軸ρ、縦軸Wq（分）。縦軸は0〜100分で固定。曲線はρ &lt; 1のみで、1に近づくとグラフの上限を超えて伸びます。点は上のスライダーの値です。02とは別の、1窓口の例です。</figcaption></figure>
