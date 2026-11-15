@@ -686,7 +686,7 @@
         overflow: hidden;
       }
 
-      #panel-steady .scene-wrap, #panel-day .scene-wrap { overflow-y: auto; }
+      #panel-steady .scene-wrap, #panel-day .scene-wrap { overflow: auto; }
 
       #scene,
       #d-scene {
@@ -1023,7 +1023,7 @@
             <div class="learn-formula">ρ = λ ÷ (c × μ) = 90 ÷ 120 = 0.75（75%）</div>
             <p>この例では、合計処理能力の75%に相当する客が到着しています。ρ &gt; 1は到着数が合計処理能力を超えているという意味で、実際の稼働割合が100%を超えるわけではありません。</p>
             <div class="lesson-visual"><p><strong>窓口数c・到着数λ・サービス数μを動かしてみる</strong></p><div class="learn-demo"><div>
-              <label for="tutorial-counter-count">窓口数c：<output id="tutorial-counter-count-value">4 窓口</output></label><input id="tutorial-counter-count" type="range" min="1" max="20" step="1" value="4">
+              <label for="tutorial-counter-count">窓口数c：<output id="tutorial-counter-count-value">4 窓口</output></label><input id="tutorial-counter-count" type="range" min="1" max="30" step="1" value="4">
               <label for="tutorial-lambda">到着率λ（対数目盛り）：<output id="tutorial-lambda-value">90 人/時</output></label><input id="tutorial-lambda" type="range" min="0" max="4000" step="5" value="90">
               <label for="tutorial-mu">1窓口の処理能力μ：<output id="tutorial-mu-value">30 人/時</output> → 合計処理能力<output id="tutorial-capacity">120 人/時</output></label><input id="tutorial-mu" type="range" min="5" max="60" step="5" value="30">
             </div><div class="learn-result" id="tutorial-load-card" aria-live="polite">利用率ρ（ロー）<strong id="tutorial-load">0.75（75%）</strong><span id="tutorial-load-formula">90 ÷ (4 × 30) = 0.75</span><p id="tutorial-load-note">処理能力に余裕があります。</p></div></div></div>
@@ -1160,7 +1160,7 @@
             <span class="control-name">窓口数</span>
             <output id="servers-out" class="control-value">3<i>窓口</i></output>
           </label>
-          <input id="servers" type="range" min="1" max="20" step="1" value="3" />
+          <input id="servers" type="range" min="1" max="30" step="1" value="3" />
           <p class="derived">処理能力 <b id="capacity">90</b> 人/時</p>
         </div>
 
@@ -1318,20 +1318,22 @@
           </div>
 
           <div class="group">
-            <h2 class="group-head">窓口のサービス時間</h2>
+            <h2 class="group-head">1窓口あたりのサービス率</h2>
             <div class="control">
               <label for="d-normal">
                 <span class="control-name">未受付の客</span>
-                <output id="d-normal-out" class="control-value">4.0<i>分</i></output>
+                <output id="d-normal-out" class="control-value">15<i>人/時</i></output>
               </label>
-              <input id="d-normal" type="range" min="0.5" max="15" step="0.5" value="4" />
+              <input id="d-normal" type="range" min="1" max="600" step="1" value="15" />
+              <p class="derived">平均サービス時間 <b id="d-normal-time">4.00</b> 分</p>
             </div>
             <div class="control">
               <label for="d-short">
                 <span class="control-name">先行受付済みの客</span>
-                <output id="d-short-out" class="control-value">1.0<i>分</i></output>
+                <output id="d-short-out" class="control-value">60<i>人/時</i></output>
               </label>
-              <input id="d-short" type="range" min="0.1" max="8" step="0.1" value="1" />
+              <input id="d-short" type="range" min="1" max="600" step="1" value="60" />
+              <p class="derived">平均サービス時間 <b id="d-short-time">1.00</b> 分</p>
               <p class="derived">
                 先行受付で窓口は <b id="d-gain">4.0</b> 倍速く流れる
               </p>
@@ -1631,7 +1633,7 @@
           const params = {
             arrivalsPerHour: clamp(next.arrivalsPerHour, 0, 4000),
             servicesPerHour: clamp(next.servicesPerHour, 0.5, 600),
-            servers: clamp(Math.round(next.servers), 1, 20),
+            servers: clamp(Math.round(next.servers), 1, 30),
             arrivalCv: clamp(next.arrivalCv ?? 1, 0, 3),
           };
           this.params = params;
@@ -1862,6 +1864,59 @@
         readArrivalSlider(input);
       }
 
+      // 前半で1〜10を1刻み、後半で10〜30を対数的に選ぶ。
+      function lanesFromPosition(position) {
+        const p = clamp(Number(position), 0, 1000);
+        return p <= 500 ? Math.round(1 + 9 * p / 500) : Math.round(10 * Math.pow(3, (p - 500) / 500));
+      }
+
+      function lanePosition(count) {
+        const c = clamp(count, 1, 30);
+        return Math.round(c <= 10 ? (c - 1) / 9 * 500 : 500 + 500 * Math.log(c / 10) / Math.log(3));
+      }
+
+      function readLaneSlider(input) {
+        const count = lanesFromPosition(input.value);
+        input.setAttribute("aria-valuetext", `${count} レーン`);
+        return count;
+      }
+
+      function setupLaneSlider(input, count = Number(input.value)) {
+        input.min = "0";
+        input.max = "1000";
+        input.step = "1";
+        input.value = String(lanePosition(count));
+        input.title = "1〜10は1刻み、10〜30は対数目盛り";
+        input.addEventListener("keydown", event => {
+          const delta = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[event.key];
+          if (!delta) return;
+          event.preventDefault();
+          input.value = String(lanePosition(readLaneSlider(input) + delta));
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+        readLaneSlider(input);
+      }
+
+      function serviceRateFromPosition(position) {
+        return Math.round(Math.pow(600, clamp(Number(position), 0, 1000) / 1000));
+      }
+
+      function readServiceSlider(input) {
+        const rate = serviceRateFromPosition(input.value);
+        input.setAttribute("aria-valuetext", `${rate} 人/時`);
+        return rate;
+      }
+
+      function setupServiceSlider(input) {
+        const rate = Number(input.value);
+        input.min = "0";
+        input.max = "1000";
+        input.step = "1";
+        input.value = String(Math.round(1000 * Math.log(rate) / Math.log(600)));
+        input.title = "対数目盛り：1窓口あたり1〜600人/時";
+        readServiceSlider(input);
+      }
+
       // ------------------------------------------------------------ 画面
 
       const el = (id) => document.getElementById(id);
@@ -2058,22 +2113,27 @@
         const entranceX = pad + 24;
         const exitLane = 78;
         const winW = clamp(width * 0.17, 104, 158);
+        const columns = serverCount >= 10 ? 2 : 1;
+        const rows = Math.ceil(serverCount / columns);
+        const columnGap = 36;
         const winRight = width - pad - exitLane;
-        const winLeft = winRight - winW;
+        const winLeft = winRight - columns * winW - (columns - 1) * columnGap;
         // 窓口どうしが離れすぎないよう行の高さに上限を置き、ブロックごと中央に置く。
-        const rowH = Math.min((botY - topY) / serverCount, 62);
+        const rowH = Math.min((botY - topY) / rows, 62);
         const boxH = Math.min(rowH - 6, 34);
         const centerY = (topY + botY) / 2;
-        const blockTop = centerY - (rowH * serverCount) / 2;
+        const blockTop = centerY - (rowH * rows) / 2;
 
         return {
-          pad, topY, botY, entranceX, winLeft, winRight, winW, rowH, boxH,
+          pad, topY, botY, entranceX, winLeft, winRight, winW, rowH, boxH, columns, rows,
           centerY, blockTop,
           queueLeft: entranceX + 30,
           queueRight: winLeft - 28,
           exitX: width + 34,
           dotR: clamp(Math.min(rowH * 0.3, 11), 4.5, 11),
-          rowY: (i) => blockTop + rowH * (i + 0.5),
+          rowY: (i) => blockTop + rowH * (i % rows + 0.5),
+          windowLeft: (i) => winLeft + Math.floor(i / rows) * (winW + columnGap),
+          windowRight: (i) => winLeft + Math.floor(i / rows) * (winW + columnGap) + winW,
         };
       }
 
@@ -2136,7 +2196,7 @@
           const slot = model.servers[i];
           if (!slot) continue;
           touch(slot.customer.id, {
-            x: layout.winLeft + layout.dotR + 7,
+            x: layout.windowLeft(i) + layout.dotR + 7,
             y: layout.rowY(i),
             state: "service",
             wait: slot.wait,
@@ -2217,7 +2277,10 @@
       }
 
       function drawScene(dt, model = sim, canvas = ui.scene, dotMap = dots, effects = pulses) {
-        if (canvas === ui.scene) canvas.style.minHeight = model.servers.length > 12 ? `${model.servers.length * 40 + 74}px` : "";
+        if (canvas === ui.scene) {
+          canvas.style.minHeight = model.servers.length >= 10 ? `${Math.ceil(model.servers.length / 2) * 40 + 74}px` : "";
+          canvas.style.minWidth = model.servers.length >= 10 ? "620px" : "";
+        }
         const { ctx, width, height } = sizeCanvas(canvas);
         ctx.clearRect(0, 0, width, height);
 
@@ -2239,7 +2302,12 @@
         for (let i = 0; i < model.servers.length; i += 1) {
           ctx.beginPath();
           ctx.moveTo(layout.queueRight + 8, layout.centerY);
-          ctx.lineTo(layout.winLeft - 6, layout.rowY(i));
+          if (i >= layout.rows) {
+            ctx.lineTo(layout.queueRight + 8, layout.topY - 12);
+            ctx.lineTo(layout.windowLeft(i) - 18, layout.topY - 12);
+            ctx.lineTo(layout.windowLeft(i) - 18, layout.rowY(i));
+          }
+          ctx.lineTo(layout.windowLeft(i) - 6, layout.rowY(i));
           ctx.stroke();
         }
         ctx.setLineDash([]);
@@ -2297,7 +2365,7 @@
           const slot = model.servers[i];
           const y = layout.rowY(i);
           const top = y - layout.boxH / 2;
-          roundRect(ctx, layout.winLeft, top, layout.winW, layout.boxH, 7);
+          roundRect(ctx, layout.windowLeft(i), top, layout.winW, layout.boxH, 7);
           ctx.fillStyle = slot ? rgba(palette.accentSoft, 1) : rgba(palette.surface2, 1);
           ctx.fill();
           ctx.strokeStyle = slot ? rgba(palette.accent, 0.55) : rgba(palette.line, 0.9);
@@ -2312,12 +2380,12 @@
             ctx.fillStyle = rgba(palette.muted, 1);
             ctx.fillText(
               slot ? `残り${fixed(Math.max(0, slot.ends - model.clock), 1)}分` : "空き",
-              layout.winRight - 8,
+              layout.windowRight(i) - 8,
               y - shift
             );
             ctx.textAlign = "left";
             ctx.fillStyle = rgba(palette.fg, 0.75);
-            ctx.fillText(`${i + 1}`, layout.winLeft + layout.dotR * 2 + 14, y - shift);
+            ctx.fillText(`${i + 1}`, layout.windowLeft(i) + layout.dotR * 2 + 14, y - shift);
             ctx.textBaseline = "alphabetic";
           }
 
@@ -2325,8 +2393,8 @@
           if (slot && layout.boxH >= 22) {
             const total = Math.max(1e-9, slot.ends - slot.started);
             const progress = clamp((model.clock - slot.started) / total, 0, 1);
-            const barLeft = layout.winLeft + 10;
-            const barRight = layout.winRight - 10;
+            const barLeft = layout.windowLeft(i) + 10;
+            const barRight = layout.windowRight(i) - 10;
             const barY = top + layout.boxH - 8;
             ctx.lineCap = "round";
             ctx.lineWidth = 2.5;
@@ -2580,12 +2648,13 @@
       // ---------- 入力 ----------
 
       setupArrivalSlider(ui.arrivals);
+      setupLaneSlider(ui.servers);
 
       function pushParams() {
         sim.setParams({
           arrivalsPerHour: readArrivalSlider(ui.arrivals),
           servicesPerHour: Number(ui.services.value),
-          servers: Number(ui.servers.value),
+          servers: readLaneSlider(ui.servers),
           arrivalCv: Number(ui.burst.value),
         });
         readoutsAt = 0;
@@ -3004,7 +3073,7 @@
           (open
             ? `<label class="sched-field"><span>窓口</span>` +
               `<output id="d-win-${hour}-out"></output>` +
-              `<input id="d-win-${hour}" type="range" min="1" max="20" step="1"></label>`
+              `<input id="d-win-${hour}" type="range" min="1" max="30" step="1"></label>`
             : `<div class="sched-field closed"><span>窓口</span><span>閉（行列のみ）</span></div>`);
         dui.sched.appendChild(col);
 
@@ -3015,23 +3084,26 @@
 
         if (open) {
           const windows = el(`d-win-${hour}`);
-          windows.value = String(dayConfig.windows[hour]);
+          setupLaneSlider(windows, dayConfig.windows[hour]);
           dayFields.windows[hour] = { input: windows, out: el(`d-win-${hour}-out`) };
           windows.addEventListener("input", pushDayConfig);
         }
       }
 
+      setupServiceSlider(dui.normal);
+      setupServiceSlider(dui.short);
+
       function pushDayConfig() {
         for (const hour of DAY_HOURS) {
           dayConfig.arrivals[hour] = readArrivalSlider(dayFields.arrivals[hour].input);
           if (dayFields.windows[hour]) {
-            dayConfig.windows[hour] = Number(dayFields.windows[hour].input.value);
+            dayConfig.windows[hour] = readLaneSlider(dayFields.windows[hour].input);
           }
         }
         dayConfig.preStaff = Number(dui.staff.value);
         dayConfig.preMean = Number(dui.pre.value);
-        dayConfig.normalService = Number(dui.normal.value);
-        dayConfig.shortService = Number(dui.short.value);
+        dayConfig.normalService = 60 / readServiceSlider(dui.normal);
+        dayConfig.shortService = 60 / readServiceSlider(dui.short);
         daySim.syncDesks();
         daySim.applyWindows();
         dayReadoutsAt = 0;
@@ -3073,8 +3145,10 @@
           Math.round((dayConfig.preStaff * 60) / dayConfig.preMean)
         );
         setValue(dui.preOut, dayConfig.preMean.toFixed(1), "分");
-        setValue(dui.normalOut, dayConfig.normalService.toFixed(1), "分");
-        setValue(dui.shortOut, dayConfig.shortService.toFixed(1), "分");
+        setValue(dui.normalOut, String(Math.round(60 / dayConfig.normalService)), "人/時");
+        el("d-normal-time").textContent = dayConfig.normalService.toFixed(2);
+        setValue(dui.shortOut, String(Math.round(60 / dayConfig.shortService)), "人/時");
+        el("d-short-time").textContent = dayConfig.shortService.toFixed(2);
         dui.gain.textContent = (dayConfig.normalService / dayConfig.shortService).toFixed(1);
 
         let total = 0;
@@ -3198,7 +3272,7 @@
           const slot = daySim.servers[i];
           if (!slot) continue;
           touch(slot.customer, {
-            x: layout.winLeft + layout.dotR + 7,
+            x: layout.windowLeft(i) + layout.dotR + 7,
             y: layout.rowY(i),
             state: "service",
             wait: slot.wait,
@@ -3250,7 +3324,8 @@
 
       function drawDayScene(dt) {
         const shown = Math.max(1, daySim.servers.length || dayConfig.windows[12]);
-        dui.scene.style.minHeight = shown > 12 ? `${shown * 40 + 74}px` : "";
+        dui.scene.style.minHeight = shown >= 10 ? `${Math.ceil(shown / 2) * 40 + 74}px` : "";
+        dui.scene.style.minWidth = shown >= 10 ? "620px" : "";
         const { ctx, width, height } = sizeCanvas(dui.scene);
         ctx.clearRect(0, 0, width, height);
 
@@ -3273,7 +3348,12 @@
           for (let i = 0; i < daySim.servers.length; i += 1) {
             ctx.beginPath();
             ctx.moveTo(layout.queueRight + 8, layout.centerY);
-            ctx.lineTo(layout.winLeft - 6, layout.rowY(i));
+            if (i >= layout.rows) {
+              ctx.lineTo(layout.queueRight + 8, layout.topY - 12);
+              ctx.lineTo(layout.windowLeft(i) - 18, layout.topY - 12);
+              ctx.lineTo(layout.windowLeft(i) - 18, layout.rowY(i));
+            }
+            ctx.lineTo(layout.windowLeft(i) - 6, layout.rowY(i));
             ctx.stroke();
           }
         }
@@ -3376,7 +3456,7 @@
           const live = open && i < daySim.servers.length;
           const y = layout.rowY(i);
           const top = y - layout.boxH / 2;
-          roundRect(ctx, layout.winLeft, top, layout.winW, layout.boxH, 7);
+          roundRect(ctx, layout.windowLeft(i), top, layout.winW, layout.boxH, 7);
           ctx.fillStyle = slot
             ? rgba(slot.pre ? palette.ok : palette.accent, 0.16)
             : rgba(palette.surface2, live ? 1 : 0.4);
@@ -3400,20 +3480,20 @@
                 : live
                 ? "空き"
                 : "準備中",
-              layout.winRight - 8,
+              layout.windowRight(i) - 8,
               y - shift
             );
             ctx.textAlign = "left";
             ctx.fillStyle = rgba(palette.fg, live ? 0.75 : 0.4);
-            ctx.fillText(`${i + 1}`, layout.winLeft + layout.dotR * 2 + 14, y - shift);
+            ctx.fillText(`${i + 1}`, layout.windowLeft(i) + layout.dotR * 2 + 14, y - shift);
             ctx.textBaseline = "alphabetic";
           }
 
           if (slot && layout.boxH >= 22) {
             const total = Math.max(1e-9, slot.ends - slot.started);
             const progress = clamp((daySim.clock - slot.started) / total, 0, 1);
-            const barLeft = layout.winLeft + 10;
-            const barRight = layout.winRight - 10;
+            const barLeft = layout.windowLeft(i) + 10;
+            const barRight = layout.windowRight(i) - 10;
             const barY = top + layout.boxH - 8;
             ctx.lineCap = "round";
             ctx.lineWidth = 2.5;
@@ -3482,7 +3562,7 @@
         let peak = 1;
         for (const point of history) if (point.q > peak) peak = point.q;
         const yMax = Math.max(4, Math.ceil(peak * 1.2));
-        const wMax = 20;
+        const wMax = 30;
 
         const xAt = (t) =>
           left + ((right - left) * (t - DAY_FROM)) / Math.max(1, endT - DAY_FROM);
@@ -3868,11 +3948,12 @@
       });
       // ---------- チュートリアルの計算・説明図 ----------
       setupArrivalSlider(el("tutorial-lambda"));
+      setupLaneSlider(el("tutorial-counter-count"));
 
       function updateTutorialLoad() {
         const lambda = readArrivalSlider(el("tutorial-lambda"));
         const mu = Number(el("tutorial-mu").value);
-        const c = Number(el("tutorial-counter-count").value);
+        const c = readLaneSlider(el("tutorial-counter-count"));
         const rho = lambda / (c * mu);
         el("tutorial-counter-count-value").textContent = c + " 窓口";
         el("tutorial-lambda-value").textContent = lambda + " 人/時";

@@ -112,10 +112,10 @@ test("pooling seek and reset reproduce both layouts including imbalance time", (
   assert.equal(snapshot(), expected);
 });
 
-test("4000 arrivals per hour and 20 servers retain the requested capacity", () => {
-  const model = new context.Sim({ arrivalsPerHour: 4000, servicesPerHour: 240, servers: 20, arrivalCv: 0 });
+test("4000 arrivals per hour and 30 servers retain the requested capacity", () => {
+  const model = new context.Sim({ arrivalsPerHour: 4000, servicesPerHour: 240, servers: 30, arrivalCv: 0 });
   assert.equal(model.params.arrivalsPerHour, 4000);
-  assert.equal(model.servers.length, 20);
+  assert.equal(model.servers.length, 30);
   model.advance(60);
   assert.ok(Math.abs(model.arrived - 4000) <= 1);
   assert.equal(model.arrived, model.served + model.queue.length + model.busyCount());

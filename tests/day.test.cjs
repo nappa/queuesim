@@ -41,10 +41,10 @@ test("zero arrivals stops at 13:00 and reset restores preopening state", () => {
   model.reset(); assert.equal(model.clock, 600); assert.equal(model.desks.length, 3);
 });
 
-test("opening schedule supports 4000 arrivals per hour and 20 lanes", () => {
-  const model = new context.Model({ ...context.config, arrivals: { 10: 4000, 11: 4000, 12: 4000 }, windows: { 12: 20 } });
+test("opening schedule supports 4000 arrivals per hour and 30 lanes", () => {
+  const model = new context.Model({ ...context.config, arrivals: { 10: 4000, 11: 4000, 12: 4000 }, windows: { 12: 30 } });
   model.advance(120);
-  assert.equal(model.servers.length, 20);
+  assert.equal(model.servers.length, 30);
   assert.ok(model.arrived > 7000);
   model.advance(60);
   assert.equal(model.clock, 780);
