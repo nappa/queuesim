@@ -1296,6 +1296,15 @@
             <p class="sub">12:00 一斉オープン · 13:00 シミュレーション終了</p>
           </header>
 
+          <div class="control">
+            <label for="d-lanes">
+              <span class="control-name">オープン後のレーン数</span>
+              <output id="d-lanes-out" class="control-value">6<i>レーン</i></output>
+            </label>
+            <input id="d-lanes" type="range" min="1" max="30" step="1" value="6" />
+            <p class="derived">1〜30レーン。10までは1刻み、その先は対数目盛り。再生中も変更できます。</p>
+          </div>
+
           <div class="group">
             <h2 class="group-head">開店前の先行受付</h2>
             <div class="control">
@@ -3064,6 +3073,7 @@
       let dayReadoutsAt = 0;
 
       const dui = {
+        lanes: el("d-lanes"), lanesOut: el("d-lanes-out"),
         staff: el("d-staff"), staffOut: el("d-staff-out"), staffCap: el("d-staff-cap"),
         pre: el("d-pre"), preOut: el("d-pre-out"),
         normal: el("d-normal"), normalOut: el("d-normal-out"),
@@ -3119,6 +3129,12 @@
         }
       }
 
+      setupLaneSlider(dui.lanes, dayConfig.windows[12]);
+      dui.lanes.addEventListener("input", () => {
+        const count = readLaneSlider(dui.lanes);
+        dayFields.windows[12].input.value = String(lanePosition(count));
+        pushDayConfig();
+      });
       setupServiceSlider(dui.normal);
       setupServiceSlider(dui.short);
 
@@ -3129,6 +3145,9 @@
             dayConfig.windows[hour] = readLaneSlider(dayFields.windows[hour].input);
           }
         }
+        dui.lanes.value = String(lanePosition(dayConfig.windows[12]));
+        readLaneSlider(dui.lanes);
+        setValue(dui.lanesOut, String(dayConfig.windows[12]), "レーン");
         dayConfig.preStaff = Number(dui.staff.value);
         dayConfig.preMean = Number(dui.pre.value);
         dayConfig.normalService = 60 / readServiceSlider(dui.normal);

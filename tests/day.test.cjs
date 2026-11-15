@@ -65,3 +65,22 @@ test("opening windows count continuous service and reset after waiting", () => {
   model.dispatch();
   assert.equal(model.servers[0].streak, 1);
 });
+
+test("live lane changes preserve clock and customers before and after opening", () => {
+  const model = new context.Model({ ...context.config, arrivals: { 10: 600, 11: 600, 12: 600 }, windows: { 12: 6 } });
+  model.advance(60);
+  model.config.windows[12] = 30; model.applyWindows();
+  assert.equal(model.clock, 660);
+  assert.equal(model.servers.length, 0);
+  model.advance(60);
+  assert.equal(model.servers.length, 30);
+  const arrived = model.arrived, served = model.served;
+  for (const lanes of [1, 10, 30]) {
+    model.config.windows[12] = lanes; model.applyWindows();
+    assert.equal(model.clock, 720);
+    assert.equal(model.servers.length, lanes);
+    assert.equal(model.arrived, arrived);
+    assert.equal(model.served, served);
+    assert.equal(model.arrived, model.served + model.queue.length + model.busyCount());
+  }
+});
