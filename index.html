@@ -1024,7 +1024,7 @@
             <p>この例では、合計処理能力の75%に相当する客が到着しています。ρ &gt; 1は到着数が合計処理能力を超えているという意味で、実際の稼働割合が100%を超えるわけではありません。</p>
             <div class="lesson-visual"><p><strong>窓口数c・到着数λ・サービス数μを動かしてみる</strong></p><div class="learn-demo"><div>
               <label for="tutorial-counter-count">窓口数c：<output id="tutorial-counter-count-value">4 窓口</output></label><input id="tutorial-counter-count" type="range" min="1" max="20" step="1" value="4">
-              <label for="tutorial-lambda">到着率λ：<output id="tutorial-lambda-value">90 人/時</output></label><input id="tutorial-lambda" type="range" min="0" max="4000" step="5" value="90">
+              <label for="tutorial-lambda">到着率λ（対数目盛り）：<output id="tutorial-lambda-value">90 人/時</output></label><input id="tutorial-lambda" type="range" min="0" max="4000" step="5" value="90">
               <label for="tutorial-mu">1窓口の処理能力μ：<output id="tutorial-mu-value">30 人/時</output> → 合計処理能力<output id="tutorial-capacity">120 人/時</output></label><input id="tutorial-mu" type="range" min="5" max="60" step="5" value="30">
             </div><div class="learn-result" id="tutorial-load-card" aria-live="polite">利用率ρ（ロー）<strong id="tutorial-load">0.75（75%）</strong><span id="tutorial-load-formula">90 ÷ (4 × 30) = 0.75</span><p id="tutorial-load-note">処理能力に余裕があります。</p></div></div></div>
           </section>
@@ -1125,7 +1125,7 @@
 
         <div class="control">
           <label for="arrivals">
-            <span class="control-name">1時間あたりの到着数</span>
+            <span class="control-name">1時間あたりの到着数（対数目盛り）</span>
             <output id="arrivals-out" class="control-value">60<i>人/時</i></output>
           </label>
           <input id="arrivals" type="range" min="0" max="4000" step="1" value="60" />
@@ -1837,6 +1837,29 @@
           pWait, lq, wq, l: lq + a, w: wq + meanService,
           ca, factor, exact, lqMM, wqMM,
         };
+      }
+
+      // 0も扱える対数目盛り。位置0〜1000を到着数0〜4000人/時に変換する。
+      function arrivalFromPosition(position) {
+        return Math.round(10 * Math.expm1(clamp(Number(position), 0, 1000) / 1000 * Math.log1p(400)));
+      }
+
+      function arrivalPosition(rate) {
+        return Math.round(1000 * Math.log1p(clamp(rate, 0, 4000) / 10) / Math.log1p(400));
+      }
+
+      function readArrivalSlider(input) {
+        const rate = arrivalFromPosition(input.value);
+        input.setAttribute("aria-valuetext", `${rate} 人/時`);
+        return rate;
+      }
+
+      function setupArrivalSlider(input, rate = Number(input.value)) {
+        input.max = "1000";
+        input.step = "1";
+        input.value = String(arrivalPosition(rate));
+        input.title = "対数目盛り：少人数は細かく、大人数は大きく調整（0〜4,000人/時）";
+        readArrivalSlider(input);
       }
 
       // ------------------------------------------------------------ 画面
@@ -2556,9 +2579,11 @@
 
       // ---------- 入力 ----------
 
+      setupArrivalSlider(ui.arrivals);
+
       function pushParams() {
         sim.setParams({
-          arrivalsPerHour: Number(ui.arrivals.value),
+          arrivalsPerHour: readArrivalSlider(ui.arrivals),
           servicesPerHour: Number(ui.services.value),
           servers: Number(ui.servers.value),
           arrivalCv: Number(ui.burst.value),
@@ -2973,7 +2998,7 @@
         col.dataset.open = String(open);
         col.innerHTML =
           `<span class="sched-hour">${hour}:00<em>${open ? "営業" : "開店前"}</em></span>` +
-          `<label class="sched-field"><span>到着</span>` +
+          `<label class="sched-field"><span>到着（対数目盛り）</span>` +
           `<output id="d-arr-${hour}-out"></output>` +
           `<input id="d-arr-${hour}" type="range" min="0" max="4000" step="10"></label>` +
           (open
@@ -2984,7 +3009,7 @@
         dui.sched.appendChild(col);
 
         const arrival = el(`d-arr-${hour}`);
-        arrival.value = String(dayConfig.arrivals[hour]);
+        setupArrivalSlider(arrival, dayConfig.arrivals[hour]);
         dayFields.arrivals[hour] = { input: arrival, out: el(`d-arr-${hour}-out`) };
         arrival.addEventListener("input", pushDayConfig);
 
@@ -2998,7 +3023,7 @@
 
       function pushDayConfig() {
         for (const hour of DAY_HOURS) {
-          dayConfig.arrivals[hour] = Number(dayFields.arrivals[hour].input.value);
+          dayConfig.arrivals[hour] = readArrivalSlider(dayFields.arrivals[hour].input);
           if (dayFields.windows[hour]) {
             dayConfig.windows[hour] = Number(dayFields.windows[hour].input.value);
           }
@@ -3842,8 +3867,10 @@
         });
       });
       // ---------- チュートリアルの計算・説明図 ----------
+      setupArrivalSlider(el("tutorial-lambda"));
+
       function updateTutorialLoad() {
-        const lambda = Number(el("tutorial-lambda").value);
+        const lambda = readArrivalSlider(el("tutorial-lambda"));
         const mu = Number(el("tutorial-mu").value);
         const c = Number(el("tutorial-counter-count").value);
         const rho = lambda / (c * mu);
