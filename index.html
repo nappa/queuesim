@@ -1323,20 +1323,20 @@
             <div class="control">
               <label for="d-normal">
                 <span class="control-name">未受付の客</span>
-                <output id="d-normal-out" class="control-value">15<i>人/時</i></output>
+                <output id="d-normal-out" class="control-value">50<i>人/時</i></output>
               </label>
-              <input id="d-normal" type="range" min="1" max="600" step="1" value="15" />
-              <p class="derived">平均サービス時間 <b id="d-normal-time">4.00</b> 分</p>
+              <input id="d-normal" type="range" min="50" max="300" step="1" value="50" />
+              <p class="derived">平均サービス時間 <b id="d-normal-time">1.20</b> 分</p>
             </div>
             <div class="control">
               <label for="d-short">
                 <span class="control-name">先行受付済みの客</span>
                 <output id="d-short-out" class="control-value">60<i>人/時</i></output>
               </label>
-              <input id="d-short" type="range" min="1" max="600" step="1" value="60" />
+              <input id="d-short" type="range" min="50" max="300" step="1" value="60" />
               <p class="derived">平均サービス時間 <b id="d-short-time">1.00</b> 分</p>
               <p class="derived">
-                先行受付で窓口は <b id="d-gain">4.0</b> 倍速く流れる
+                先行受付で窓口は <b id="d-gain">1.2</b> 倍速く流れる
               </p>
             </div>
           </div>
@@ -1919,7 +1919,7 @@
       }
 
       function serviceRateFromPosition(position) {
-        return Math.round(Math.pow(600, clamp(Number(position), 0, 1000) / 1000));
+        return Math.round(50 * Math.pow(6, clamp(Number(position), 0, 1000) / 1000));
       }
 
       function readServiceSlider(input) {
@@ -1933,8 +1933,8 @@
         input.min = "0";
         input.max = "1000";
         input.step = "1";
-        input.value = String(Math.round(1000 * Math.log(rate) / Math.log(600)));
-        input.title = "対数目盛り：1窓口あたり1〜600人/時";
+        input.value = String(Math.round(1000 * Math.log(clamp(rate, 50, 300) / 50) / Math.log(6)));
+        input.title = "対数目盛り：1窓口あたり50〜300人/時";
         readServiceSlider(input);
       }
 
@@ -3053,7 +3053,7 @@
         preStaff: 3,
         preMean: 1.5,
         shortService: 1,
-        normalService: 4,
+        normalService: 1.2,
       };
 
       const daySim = new DaySim(dayConfig);

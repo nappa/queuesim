@@ -24,7 +24,7 @@ test("opening stops ongoing registration and prevents new assignments", () => {
   model.advance(30); assert.equal(model.registered, 1);
 });
 test("simulation stops at 13:00 and preserves unfinished customers", () => {
-  const model = new context.Model({ ...context.config });
+  const model = new context.Model({ ...context.config, arrivals: { 10: 600, 11: 600, 12: 600 } });
   model.advance(120);
   const registered = model.registered;
   model.advance(1000);
