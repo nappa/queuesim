@@ -1126,10 +1126,10 @@
         <div class="control">
           <label for="arrivals">
             <span class="control-name">1時間あたりの到着数（対数目盛り）</span>
-            <output id="arrivals-out" class="control-value">60<i>人/時</i></output>
+            <output id="arrivals-out" class="control-value">600<i>人/時</i></output>
           </label>
-          <input id="arrivals" type="range" min="0" max="4000" step="1" value="60" />
-          <p class="derived">平均到着間隔 <b id="mean-ia">1.00</b> 分</p>
+          <input id="arrivals" type="range" min="0" max="4000" step="1" value="600" />
+          <p class="derived">平均到着間隔 <b id="mean-ia">0.10</b> 分</p>
         </div>
 
         <div class="control">
@@ -1149,19 +1149,19 @@
         <div class="control">
           <label for="services">
             <span class="control-name">1窓口1時間あたりのサービス数</span>
-            <output id="services-out" class="control-value">30<i>人/時</i></output>
+            <output id="services-out" class="control-value">200<i>人/時</i></output>
           </label>
-          <input id="services" type="range" min="1" max="240" step="1" value="30" />
-          <p class="derived">平均サービス時間 <b id="mean-svc">2.00</b> 分</p>
+          <input id="services" type="range" min="50" max="300" step="1" value="200" />
+          <p class="derived">平均サービス時間 <b id="mean-svc">0.30</b> 分</p>
         </div>
 
         <div class="control">
           <label for="servers">
             <span class="control-name">窓口数</span>
-            <output id="servers-out" class="control-value">3<i>窓口</i></output>
+            <output id="servers-out" class="control-value">4<i>窓口</i></output>
           </label>
-          <input id="servers" type="range" min="1" max="30" step="1" value="3" />
-          <p class="derived">処理能力 <b id="capacity">90</b> 人/時</p>
+          <input id="servers" type="range" min="1" max="30" step="1" value="4" />
+          <p class="derived">処理能力 <b id="capacity">800</b> 人/時</p>
         </div>
 
         <div class="control">
@@ -1847,7 +1847,7 @@
       }
 
       function arrivalPosition(rate) {
-        return Math.round(1000 * Math.log1p(clamp(rate, 0, 4000) / 10) / Math.log1p(400));
+        return Math.round(1000000 * Math.log1p(clamp(rate, 0, 4000) / 10) / Math.log1p(400)) / 1000;
       }
 
       function readArrivalSlider(input) {
@@ -1858,7 +1858,7 @@
 
       function setupArrivalSlider(input, rate = Number(input.value)) {
         input.max = "1000";
-        input.step = "1";
+        input.step = "0.001";
         input.value = String(arrivalPosition(rate));
         input.title = "対数目盛り：少人数は細かく、大人数は大きく調整（0〜4,000人/時）";
         readArrivalSlider(input);
@@ -1947,9 +1947,9 @@
         'ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace';
 
       const sim = new Sim({
-        arrivalsPerHour: 60,
-        servicesPerHour: 30,
-        servers: 3,
+        arrivalsPerHour: 600,
+        servicesPerHour: 200,
+        servers: 4,
         arrivalCv: 1,
       });
       let running = true;
