@@ -7,7 +7,7 @@ const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const context = vm.createContext({});
 vm.runInContext(script.slice(0, script.indexOf("// ------------------------------------------------------------ 画面")) +
   script.slice(script.indexOf("class TutorialComparisonSim"), script.indexOf("const tutorialAnimations")) +
-  "globalThis.Comparison = TutorialComparisonSim; globalThis.Network = TutorialNetwork; globalThis.Pooling = TutorialPooling;", context);
+  "globalThis.Sim = Sim; globalThis.Comparison = TutorialComparisonSim; globalThis.Network = TutorialNetwork; globalThis.Pooling = TutorialPooling;", context);
 function snapshot(network) {
   return JSON.stringify({ clock: Math.round(network.clock * 1e9) / 1e9, arrived: network.arrived, exited: network.exited,
     stages: network.stages.map(({ model }) => [model.arrived, model.served, model.queue.items, model.queue.head, model.servers]) });
@@ -110,4 +110,17 @@ test("pooling seek and reset reproduce both layouts including imbalance time", (
   assert.equal(snapshot(), expected);
   comparison.reset(); comparison.advance(10); comparison.advance(20);
   assert.equal(snapshot(), expected);
+});
+
+test("4000 arrivals per hour and 20 servers retain the requested capacity", () => {
+  const model = new context.Sim({ arrivalsPerHour: 4000, servicesPerHour: 240, servers: 20, arrivalCv: 0 });
+  assert.equal(model.params.arrivalsPerHour, 4000);
+  assert.equal(model.servers.length, 20);
+  model.advance(60);
+  assert.ok(Math.abs(model.arrived - 4000) <= 1);
+  assert.equal(model.arrived, model.served + model.queue.length + model.busyCount());
+  model.setParams({ ...model.params, arrivalsPerHour: 0, servers: 1 });
+  assert.equal(model.arrived, model.served + model.queue.length + model.busyCount());
+  model.advance(120);
+  assert.equal(model.arrived, model.served);
 });

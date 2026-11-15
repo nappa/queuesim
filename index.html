@@ -686,6 +686,8 @@
         overflow: hidden;
       }
 
+      #panel-steady .scene-wrap, #panel-day .scene-wrap { overflow-y: auto; }
+
       #scene,
       #d-scene {
         display: block;
@@ -1021,8 +1023,8 @@
             <div class="learn-formula">ρ = λ ÷ (c × μ) = 90 ÷ 120 = 0.75（75%）</div>
             <p>この例では、合計処理能力の75%に相当する客が到着しています。ρ &gt; 1は到着数が合計処理能力を超えているという意味で、実際の稼働割合が100%を超えるわけではありません。</p>
             <div class="lesson-visual"><p><strong>窓口数c・到着数λ・サービス数μを動かしてみる</strong></p><div class="learn-demo"><div>
-              <label for="tutorial-counter-count">窓口数c：<output id="tutorial-counter-count-value">4 窓口</output></label><input id="tutorial-counter-count" type="range" min="1" max="12" step="1" value="4">
-              <label for="tutorial-lambda">到着率λ：<output id="tutorial-lambda-value">90 人/時</output></label><input id="tutorial-lambda" type="range" min="0" max="240" step="5" value="90">
+              <label for="tutorial-counter-count">窓口数c：<output id="tutorial-counter-count-value">4 窓口</output></label><input id="tutorial-counter-count" type="range" min="1" max="20" step="1" value="4">
+              <label for="tutorial-lambda">到着率λ：<output id="tutorial-lambda-value">90 人/時</output></label><input id="tutorial-lambda" type="range" min="0" max="4000" step="5" value="90">
               <label for="tutorial-mu">1窓口の処理能力μ：<output id="tutorial-mu-value">30 人/時</output> → 合計処理能力<output id="tutorial-capacity">120 人/時</output></label><input id="tutorial-mu" type="range" min="5" max="60" step="5" value="30">
             </div><div class="learn-result" id="tutorial-load-card" aria-live="polite">利用率ρ（ロー）<strong id="tutorial-load">0.75（75%）</strong><span id="tutorial-load-formula">90 ÷ (4 × 30) = 0.75</span><p id="tutorial-load-note">処理能力に余裕があります。</p></div></div></div>
           </section>
@@ -1126,7 +1128,7 @@
             <span class="control-name">1時間あたりの到着数</span>
             <output id="arrivals-out" class="control-value">60<i>人/時</i></output>
           </label>
-          <input id="arrivals" type="range" min="0" max="240" step="1" value="60" />
+          <input id="arrivals" type="range" min="0" max="4000" step="1" value="60" />
           <p class="derived">平均到着間隔 <b id="mean-ia">1.00</b> 分</p>
         </div>
 
@@ -1158,7 +1160,7 @@
             <span class="control-name">窓口数</span>
             <output id="servers-out" class="control-value">3<i>窓口</i></output>
           </label>
-          <input id="servers" type="range" min="1" max="12" step="1" value="3" />
+          <input id="servers" type="range" min="1" max="20" step="1" value="3" />
           <p class="derived">処理能力 <b id="capacity">90</b> 人/時</p>
         </div>
 
@@ -1627,9 +1629,9 @@
          */
         setParams(next) {
           const params = {
-            arrivalsPerHour: clamp(next.arrivalsPerHour, 0, 600),
+            arrivalsPerHour: clamp(next.arrivalsPerHour, 0, 4000),
             servicesPerHour: clamp(next.servicesPerHour, 0.5, 600),
-            servers: clamp(Math.round(next.servers), 1, 12),
+            servers: clamp(Math.round(next.servers), 1, 20),
             arrivalCv: clamp(next.arrivalCv ?? 1, 0, 3),
           };
           this.params = params;
@@ -2192,6 +2194,7 @@
       }
 
       function drawScene(dt, model = sim, canvas = ui.scene, dotMap = dots, effects = pulses) {
+        if (canvas === ui.scene) canvas.style.minHeight = model.servers.length > 12 ? `${model.servers.length * 40 + 74}px` : "";
         const { ctx, width, height } = sizeCanvas(canvas);
         ctx.clearRect(0, 0, width, height);
 
@@ -2972,11 +2975,11 @@
           `<span class="sched-hour">${hour}:00<em>${open ? "営業" : "開店前"}</em></span>` +
           `<label class="sched-field"><span>到着</span>` +
           `<output id="d-arr-${hour}-out"></output>` +
-          `<input id="d-arr-${hour}" type="range" min="0" max="400" step="10"></label>` +
+          `<input id="d-arr-${hour}" type="range" min="0" max="4000" step="10"></label>` +
           (open
             ? `<label class="sched-field"><span>窓口</span>` +
               `<output id="d-win-${hour}-out"></output>` +
-              `<input id="d-win-${hour}" type="range" min="1" max="12" step="1"></label>`
+              `<input id="d-win-${hour}" type="range" min="1" max="20" step="1"></label>`
             : `<div class="sched-field closed"><span>窓口</span><span>閉（行列のみ）</span></div>`);
         dui.sched.appendChild(col);
 
@@ -3221,12 +3224,13 @@
       }
 
       function drawDayScene(dt) {
+        const shown = Math.max(1, daySim.servers.length || dayConfig.windows[12]);
+        dui.scene.style.minHeight = shown > 12 ? `${shown * 40 + 74}px` : "";
         const { ctx, width, height } = sizeCanvas(dui.scene);
         ctx.clearRect(0, 0, width, height);
 
         const open = daySim.clock >= DAY_OPEN;
         // 開店前も、これから開く窓口の枠は見せておく。
-        const shown = Math.max(1, daySim.servers.length || dayConfig.windows[12]);
         const layout = sceneLayout(width, height, shown);
         const { overflow, gap } = updateDayDots(layout, dt);
         const labelFont = `500 10.5px ${FONT_UI}`;
@@ -3453,7 +3457,7 @@
         let peak = 1;
         for (const point of history) if (point.q > peak) peak = point.q;
         const yMax = Math.max(4, Math.ceil(peak * 1.2));
-        const wMax = 12;
+        const wMax = 20;
 
         const xAt = (t) =>
           left + ((right - left) * (t - DAY_FROM)) / Math.max(1, endT - DAY_FROM);
