@@ -125,21 +125,21 @@ test("4000 arrivals per hour and 30 servers retain the requested capacity", () =
   assert.equal(model.arrived, model.served);
 });
 
-test("continuous service reaches yellow at 50, red at 100 and resets after idle", () => {
+test("continuous service reaches yellow at 30, red at 50 and resets after idle", () => {
   const model = new context.Sim({ arrivalsPerHour: 0, servicesPerHour: 60, servers: 1, arrivalCv: 1 });
   model.serviceDuration = () => 1;
   for (let i = 1; i <= 105; i++) model.queue.push({ id: i, arrived: 0 });
   model.dispatch();
-  model.advance(48);
-  assert.equal(model.servers[0].streak, 49);
-  assert.equal(vm.runInContext("serverRunTone(49)", context), "normal");
+  model.advance(28);
+  assert.equal(model.servers[0].streak, 29);
+  assert.equal(vm.runInContext("serverRunTone(29)", context), "normal");
   model.advance(1);
+  assert.equal(model.servers[0].streak, 30);
+  assert.equal(vm.runInContext("serverRunTone(30)", context), "warn");
+  model.advance(20);
   assert.equal(model.servers[0].streak, 50);
-  assert.equal(vm.runInContext("serverRunTone(50)", context), "warn");
-  model.advance(50);
-  assert.equal(model.servers[0].streak, 100);
-  assert.equal(vm.runInContext("serverRunTone(100)", context), "crit");
-  model.advance(7);
+  assert.equal(vm.runInContext("serverRunTone(50)", context), "crit");
+  model.advance(57);
   assert.equal(model.servers[0], null);
   model.queue.push({ id: 106, arrived: model.clock });
   model.dispatch();

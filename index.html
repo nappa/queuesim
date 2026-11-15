@@ -1228,14 +1228,14 @@
         </div>
 
         <footer class="panel-foot">
-          <p>窓口の連続対応：50人目から黄色、100人目から赤。待機時間ができるとリセットします。</p>
+          <p>窓口の連続対応：30人目から黄色、50人目から赤。待機時間ができるとリセットします。</p>
           <p>スライダーを動かしても行列と統計はそのまま続きます。新しい条件での変化を、そのまま追えます。</p>
         </footer>
       </aside>
 
       <main class="stage">
         <section class="scene-wrap">
-          <canvas id="scene" title="窓口の連続対応：50人目から黄色、100人目から赤。待機時間ができるとリセット。" aria-label="待ち行列のアニメーション"></canvas>
+          <canvas id="scene" title="窓口の連続対応：30人目から黄色、50人目から赤。待機時間ができるとリセット。" aria-label="待ち行列のアニメーション"></canvas>
           <div class="scene-clock">
             <span id="clock">0:00:00</span>
             <i>経過（シミュレーション時間）</i>
@@ -1393,7 +1393,7 @@
           </div>
 
           <footer class="panel-foot">
-          <p>窓口の連続対応：50人目から黄色、100人目から赤。待機時間ができるとリセットします。</p>
+          <p>窓口の連続対応：30人目から黄色、50人目から赤。待機時間ができるとリセットします。</p>
             <p>
               13:00でシミュレーションを停止し、その時点の待ち人数と対応中の人数を表示します。
             </p>
@@ -1402,7 +1402,7 @@
 
         <main class="stage stage-day">
           <section class="scene-wrap">
-            <canvas id="d-scene" title="窓口の連続対応：50人目から黄色、100人目から赤。待機時間ができるとリセット。" aria-label="オープン時間のアニメーション"></canvas>
+            <canvas id="d-scene" title="窓口の連続対応：30人目から黄色、50人目から赤。待機時間ができるとリセット。" aria-label="オープン時間のアニメーション"></canvas>
             <div class="scene-clock">
               <span id="d-clock">10:00</span>
               <i id="d-clock-sub">開店まで 120 分</i>
@@ -1540,7 +1540,7 @@
       }
 
       function serverRunTone(count) {
-        return count >= 100 ? "crit" : count >= 50 ? "warn" : "normal";
+        return count >= 50 ? "crit" : count >= 30 ? "warn" : "normal";
       }
 
       class Sim {
@@ -2405,7 +2405,7 @@
             ctx.textAlign = "right";
             ctx.fillStyle = rgba(palette.muted, 1);
             ctx.fillText(
-              slot ? (slot.streak >= 50 ? `連続${slot.streak}人目` : `残り${fixed(Math.max(0, slot.ends - model.clock), 1)}分`) : "空き",
+              slot ? (slot.streak >= 30 ? `連続${slot.streak}人目` : `残り${fixed(Math.max(0, slot.ends - model.clock), 1)}分`) : "空き",
               layout.windowRight(i) - 8,
               y - shift
             );
@@ -3505,7 +3505,7 @@
             ctx.fillStyle = rgba(palette.muted, 1);
             ctx.fillText(
               slot
-                ? (slot.streak >= 50 ? `連続${slot.streak}人目` : `残り${fixed(Math.max(0, slot.ends - daySim.clock), 1)}分`)
+                ? (slot.streak >= 30 ? `連続${slot.streak}人目` : `残り${fixed(Math.max(0, slot.ends - daySim.clock), 1)}分`)
                 : live
                 ? "空き"
                 : "準備中",
