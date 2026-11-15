@@ -50,3 +50,18 @@ test("opening schedule supports 4000 arrivals per hour and 30 lanes", () => {
   assert.equal(model.clock, 780);
   assert.equal(model.arrived, model.served + model.queue.length + model.servers.filter(Boolean).length);
 });
+
+test("opening windows count continuous service and reset after waiting", () => {
+  const model = new context.Model({ ...context.config, preStaff: 0, arrivals: { 10: 0, 11: 0, 12: 0 }, windows: { 12: 1 } });
+  model.advance(120);
+  model.exponential = () => 0.125;
+  for (let i = 1; i <= 105; i++) model.queue.push({ id: i, arrived: 720, registered: false });
+  model.dispatch();
+  model.advance(99 * 0.125);
+  assert.equal(model.servers[0].streak, 100);
+  model.advance(2);
+  assert.equal(model.servers[0], null);
+  model.queue.push({ id: 106, arrived: model.clock, registered: false });
+  model.dispatch();
+  assert.equal(model.servers[0].streak, 1);
+});

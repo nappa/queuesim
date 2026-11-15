@@ -1228,13 +1228,14 @@
         </div>
 
         <footer class="panel-foot">
+          <p>窓口の連続対応：50人目から黄色、100人目から赤。待機時間ができるとリセットします。</p>
           <p>スライダーを動かしても行列と統計はそのまま続きます。新しい条件での変化を、そのまま追えます。</p>
         </footer>
       </aside>
 
       <main class="stage">
         <section class="scene-wrap">
-          <canvas id="scene" aria-label="待ち行列のアニメーション"></canvas>
+          <canvas id="scene" title="窓口の連続対応：50人目から黄色、100人目から赤。待機時間ができるとリセット。" aria-label="待ち行列のアニメーション"></canvas>
           <div class="scene-clock">
             <span id="clock">0:00:00</span>
             <i>経過（シミュレーション時間）</i>
@@ -1245,7 +1246,7 @@
           <div class="tile">
             <span class="tile-label">いま待っている人</span>
             <span class="tile-value" id="now-queue">0<i>人</i></span>
-            <span class="tile-sub">サービス中 <b id="now-busy">0 / 3</b></span>
+            <span class="tile-sub">サービス中 <b id="now-busy">0 / 4</b></span>
           </div>
           <div class="tile">
             <span class="tile-label">平均待ち時間 Wq</span>
@@ -1392,6 +1393,7 @@
           </div>
 
           <footer class="panel-foot">
+          <p>窓口の連続対応：50人目から黄色、100人目から赤。待機時間ができるとリセットします。</p>
             <p>
               13:00でシミュレーションを停止し、その時点の待ち人数と対応中の人数を表示します。
             </p>
@@ -1400,7 +1402,7 @@
 
         <main class="stage stage-day">
           <section class="scene-wrap">
-            <canvas id="d-scene" aria-label="オープン時間のアニメーション"></canvas>
+            <canvas id="d-scene" title="窓口の連続対応：50人目から黄色、100人目から赤。待機時間ができるとリセット。" aria-label="オープン時間のアニメーション"></canvas>
             <div class="scene-clock">
               <span id="d-clock">10:00</span>
               <i id="d-clock-sub">開店まで 120 分</i>
@@ -1529,6 +1531,18 @@
 
       const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
 
+      // 窓口ごとに、待機時間を挟まず対応を開始した人数を数える。
+      function recordServerRun(model, index) {
+        const slot = model.servers[index];
+        const previous = model.serverRuns[index];
+        slot.streak = previous && Math.abs(previous.ends - model.clock) < 1e-9 ? previous.count + 1 : 1;
+        model.serverRuns[index] = { count: slot.streak, ends: slot.ends };
+      }
+
+      function serverRunTone(count) {
+        return count >= 100 ? "crit" : count >= 50 ? "warn" : "normal";
+      }
+
       class Sim {
         constructor(params) {
           // arrivalCv を省いたら Ca=1（ポアソン到着）。
@@ -1606,6 +1620,7 @@
           this.nextId = 1;
           this.queue.clear();
           this.servers = new Array(this.params.servers).fill(null);
+          this.serverRuns = [];
           this.nextArrival = this.nextInterarrival();
           this.clearStats();
         }
@@ -1641,6 +1656,7 @@
           // 窓口を減らすときは、サービス中だった客を行列の先頭に戻す。
           if (params.servers < this.servers.length) {
             const removed = this.servers.splice(params.servers);
+            this.serverRuns.length = params.servers;
             for (let i = removed.length - 1; i >= 0; i -= 1) {
               if (removed[i]) this.queue.unshift(removed[i].customer);
             }
@@ -1650,7 +1666,11 @@
 
           // 指数分布は無記憶なので、サービス中の残り時間は新しい μ で引き直してよい。
           for (const slot of this.servers) {
-            if (slot) slot.ends = this.clock + this.exponential(this.meanService);
+            if (slot) {
+              slot.ends = this.clock + this.exponential(this.meanService);
+              const index = this.servers.indexOf(slot);
+              if (this.serverRuns[index]) this.serverRuns[index].ends = slot.ends;
+            }
           }
 
           this.nextArrival = this.clock + this.nextInterarrival();
@@ -1685,6 +1705,7 @@
               started: this.clock,
               ends: this.clock + duration,
             };
+            recordServerRun(this, i);
           }
         }
 
@@ -2276,6 +2297,11 @@
         ctx.stroke();
       }
 
+      function serverRunColor(slot, fallback = palette.accent) {
+        const tone = serverRunTone(slot?.streak ?? 0);
+        return tone === "crit" ? palette.crit : tone === "warn" ? [224, 177, 24] : fallback;
+      }
+
       function drawScene(dt, model = sim, canvas = ui.scene, dotMap = dots, effects = pulses) {
         if (canvas === ui.scene) {
           canvas.style.minHeight = model.servers.length >= 10 ? `${Math.ceil(model.servers.length / 2) * 40 + 74}px` : "";
@@ -2366,9 +2392,9 @@
           const y = layout.rowY(i);
           const top = y - layout.boxH / 2;
           roundRect(ctx, layout.windowLeft(i), top, layout.winW, layout.boxH, 7);
-          ctx.fillStyle = slot ? rgba(palette.accentSoft, 1) : rgba(palette.surface2, 1);
+          ctx.fillStyle = slot ? rgba(serverRunColor(slot), 0.18) : rgba(palette.surface2, 1);
           ctx.fill();
-          ctx.strokeStyle = slot ? rgba(palette.accent, 0.55) : rgba(palette.line, 0.9);
+          ctx.strokeStyle = slot ? rgba(serverRunColor(slot), 0.85) : rgba(palette.line, 0.9);
           ctx.lineWidth = 1;
           ctx.stroke();
 
@@ -2379,7 +2405,7 @@
             ctx.textAlign = "right";
             ctx.fillStyle = rgba(palette.muted, 1);
             ctx.fillText(
-              slot ? `残り${fixed(Math.max(0, slot.ends - model.clock), 1)}分` : "空き",
+              slot ? (slot.streak >= 50 ? `連続${slot.streak}人目` : `残り${fixed(Math.max(0, slot.ends - model.clock), 1)}分`) : "空き",
               layout.windowRight(i) - 8,
               y - shift
             );
@@ -2403,7 +2429,7 @@
             ctx.moveTo(barLeft, barY);
             ctx.lineTo(barRight, barY);
             ctx.stroke();
-            ctx.strokeStyle = rgba(palette.accent, 1);
+            ctx.strokeStyle = rgba(serverRunColor(slot), 1);
             ctx.beginPath();
             ctx.moveTo(barLeft, barY);
             ctx.lineTo(barLeft + (barRight - barLeft) * progress, barY);
@@ -2720,6 +2746,7 @@
           this.nextId = 1;
           this.queue = new Queue();
           this.servers = [];
+          this.serverRuns = [];
           this.desks = new Array(this.config.preStaff).fill(null);
           this.boundaryDue = DAY_OPEN;
           this.finishedAt = null;
@@ -2801,6 +2828,7 @@
           if (this.servers.length === want) return;
           if (want < this.servers.length) {
             const removed = this.servers.splice(want);
+            this.serverRuns.length = want;
             for (let i = removed.length - 1; i >= 0; i -= 1) {
               if (removed[i]) {
                 removed[i].customer.gone = false;
@@ -2847,6 +2875,7 @@
               started: this.clock,
               ends: this.clock + this.exponential(mean),
             };
+            recordServerRun(this, i);
           }
         }
 
@@ -3458,12 +3487,12 @@
           const top = y - layout.boxH / 2;
           roundRect(ctx, layout.windowLeft(i), top, layout.winW, layout.boxH, 7);
           ctx.fillStyle = slot
-            ? rgba(slot.pre ? palette.ok : palette.accent, 0.16)
+            ? rgba(serverRunColor(slot, slot.pre ? palette.ok : palette.accent), 0.18)
             : rgba(palette.surface2, live ? 1 : 0.4);
           ctx.fill();
           if (!live) ctx.setLineDash([3, 3]);
           ctx.strokeStyle = slot
-            ? rgba(slot.pre ? palette.ok : palette.accent, 0.6)
+            ? rgba(serverRunColor(slot, slot.pre ? palette.ok : palette.accent), 0.85)
             : rgba(palette.line, live ? 0.9 : 0.6);
           ctx.lineWidth = 1;
           ctx.stroke();
@@ -3476,7 +3505,7 @@
             ctx.fillStyle = rgba(palette.muted, 1);
             ctx.fillText(
               slot
-                ? `残り${fixed(Math.max(0, slot.ends - daySim.clock), 1)}分`
+                ? (slot.streak >= 50 ? `連続${slot.streak}人目` : `残り${fixed(Math.max(0, slot.ends - daySim.clock), 1)}分`)
                 : live
                 ? "空き"
                 : "準備中",
@@ -3502,7 +3531,7 @@
             ctx.moveTo(barLeft, barY);
             ctx.lineTo(barRight, barY);
             ctx.stroke();
-            ctx.strokeStyle = rgba(slot.pre ? palette.ok : palette.accent, 1);
+            ctx.strokeStyle = rgba(serverRunColor(slot, slot.pre ? palette.ok : palette.accent), 1);
             ctx.beginPath();
             ctx.moveTo(barLeft, barY);
             ctx.lineTo(barLeft + (barRight - barLeft) * progress, barY);
